@@ -40,6 +40,8 @@
 - **Muse 不進生產線，擔任 W10 PM**：任務協調＋專案 PM，在主對話對齊，派單與進度回報經 Slack thread。Slack @ 喚醒不穩定，不納入面向前端使用者的自動化流程。
 - **Repo handoff 紀錄由 PM 維護**：每站結束後，PM 把 Thread 裡的 HANDOFF Block 彙整進 Repo `docs/handoffs/<job-id>.md`，再推上 develop（Muse 經 connector 推；封閉式 Agent 仍禁止直接 commit／push，見 §2 自檢條）。
 
+- **所有 PR／issue／merge 都要留名**：所有 agent 都用同一個 GitHub 帳號（nickyxu1985）操作，GitHub 顯示的 author／merged_by 永遠是那個帳號，看不出實際是誰做的。規則：PR 內文開頭標明執行者（`By <agent>`，例如 By Muse (PM)／By Hark／By Instinct／By Cue）；issue 同；merge 時在 PR 留言或 merge commit 註明執行者；commit 訊息結尾加 `By <agent>`（Hark 已有此慣例）。沒留名的操作視為未完成交接。2026-11-19 實例：PR #2／#3 的 merge 經 Muse 連接執行，卻只顯示 nickyxu1985／web-flow，沒留 Muse 的名字，事後無法確認是誰按的——此規則就是補這個洞。
+
 ## 4. 白盒化效益
 
 1. **來源可稽核**：階段一抓了哪 5 篇官方文件、有沒有混入農場文，在 Thread 一目了然。
