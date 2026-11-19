@@ -29,7 +29,7 @@
 | §3.2 R2 結構 `wiki/`、`lessons/` | 概念照 SPEC；POC 先以 Repo＋檔案交付，R2/D1 上線是期末（`notes/` 是期末才有） |
 | §7.1 Slack 專屬教案頻道，1 Job = 1 Thread | 全採：本次 POC 的唯一一個 Job 就開一個 Thread，全部交接留在裡面 |
 | §7.2 `handoff.md` 白盒化交接區塊 | 全採：每階段結束都要貼 HANDOFF Block（來源、檢查點、狀態、異常） |
-| §7.3 分工：Cue ingest（mail）、Instinct / Hark Pro 產出、Muse 不進主幹道 | 全採，不變 |
+| §7.3 分工：Cue ingest（@cue）、Instinct / Hark Pro 產出、Muse 是 W10 PM（不進產線） | 全採，不變 |
 | §7.3 簡報母版分離組裝（Agent 只出 JSON，套母版成 HTML） | 全採，避免 HTML 破版 |
 | §7.3 12 分鐘超時改派 | 原則照 SPEC；POC 先以人工盯哨代替自動改派（時間不夠做自動化） |
 
@@ -45,7 +45,7 @@
 ## 5. POC 的實際跑法（最小可行流水線）
 
 1. Nicky 開 Slack 專屬教案頻道（例如 `#lesson-gen-jobs`），本次 Job 開一個 Thread（1 Job = 1 Thread）。
-2. Cue（mail）ingest：抓 5 篇以上官方／技術文件，結構化進 LLM-Wiki，貼 HANDOFF Block 到 Thread。
+2. Cue（@cue）ingest：抓 5 篇以上官方／技術文件，結構化進 LLM-Wiki，貼 HANDOFF Block 到 Thread。
 3. Instinct 驗證＋結構化進 Wiki（與生產者不同人驗證）。
 4. Hark 查 Wiki、驗來源＋Wiki，整理重點＋生簡報結構 JSON，套母版成 HTML，貼 HANDOFF Block 到 Thread。
 5. Instinct 終驗，Thread 標記完成 ✅。

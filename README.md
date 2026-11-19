@@ -24,7 +24,7 @@
 |---|---|---|
 | Instinct | 專職驗證＋結構化進 Wiki（驗 ingest、驗最終 HTML） | 不生產教案、不做美工 |
 | Hark | 查 Wiki、驗來源＋Wiki、整理重點、產 HTML＋美工 | 不碰 ingest |
-| Cue | ingest 找資料、檢索（經 mail 來回，沒接 Slack） | 不進 Slack thread |
+| Cue | ingest 找資料、檢索（Slack @cue 派工；mail 備用，發了要貼進 thread） | — |
 | Muse | W10 PM：任務協調＋專案 PM（不進產線；Slack @ 不穩定，在主對話對齊） | 不接任何一站（只做協調、追蹤、驗收） |
 | Nicky | n8n 照舊跑（不用改）；開 Slack 期末教案頻道；W10 派工在 #taica-w10-hw；驗收 | — |
 
@@ -60,7 +60,7 @@ docs/
 3. 推起手包到 `develop` → 本次推送。
 4. 開 Slack 期末教案頻道 #universal-lesson-generator（1 Job = 1 Thread）→ 已開（Nicky）；W10 派工仍在 #taica-w10-hw。
 5. 補 `topics/topic.yaml` 裡 6 個來源 URL（以 Slack #taica-w10-hw 討論串核對清單為準，每篇過 HTTP 200＋內文非空檢查）→ 待 Nicky。
-6. n8n 照舊跑，不用改（春川；Cue 的 mail 通道與每站 timeout 警報照舊）→ W10 在 #taica-w10-hw 開 Thread 派單。
+6. n8n 照舊跑，不用改（春川；Cue 的 @cue 通道與每站 timeout 警報照舊）→ W10 在 #taica-w10-hw 開 Thread 派單。
 
 ## 成本：$0 / 月
 

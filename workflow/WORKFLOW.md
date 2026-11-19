@@ -3,7 +3,7 @@
 > 範例主題：固定自動流 → 單一 Agent → Multi-Agent，怎麼做選型。受眾：國小／國中／高中。
 > 作業步驟對照：取得資料 → 查詢 Wiki → 整理重點 → 檢查內容 → 產生簡報。
 
-> **W10 POC 跑法**：沒有首頁、沒有守門員、n8n 照舊。入口就是 #taica-w10-hw 手動開 Thread 派單。順序：1 Ingest（Cue，mail）→ 2 整理進 Wiki（Hark）→ 3a 查 Wiki（Hark）→ 3b 教案（Hark）→ 4 HTML 簡報（Hark）；Instinct 每站驗證。
+> **W10 POC 跑法**：沒有首頁、沒有守門員、n8n 照舊。入口就是 #taica-w10-hw 手動開 Thread 派單。順序：1 Ingest（Cue，@cue）→ 2 整理進 Wiki（Hark）→ 3a 查 Wiki（Hark）→ 3b 教案（Hark）→ 4 HTML 簡報（Hark）；Instinct 每站驗證。
 
 ## 入口（首頁，CF Pages）
 
@@ -16,7 +16,7 @@
 - 只判斷過／不過，不做生成。輸入：主題＋受眾；輸出：pass／fail＋理由。
 - 失敗：首頁顯示否決原因，流程結束，不進 n8n。
 
-## 1. Ingest：找資料（Cue，經 mail）
+## 1. Ingest：找資料（Cue，Slack @cue）
 
 - Agent 依主題自己找官方／技術文件，抓 5 個以上來源。範例主題起點：n8n、Anthropic、OpenAI、ReAct、LangGraph、Google（Hermes #1 已實測有正文；URL 見 `topics/topic.yaml`）。
 - 檢查：HTTP 200、內文非空、跟主題有關、去重、官方優先。不合格換下一個，直到 5 個有效來源。
@@ -73,9 +73,9 @@
 
 ## N8N 流程（春川，照舊跑，不用改）
 
-- Webhook 接 CF 過濾後的任務 → 在 Slack 專用頻道開 thread，@Hark 查 Wiki → 沒有就發 mail 給 Cue，等回信貼回 thread → @Instinct 驗證，過了才往下 → @Hark 生教案＋HTML 到暫存區 → @Instinct 終驗，過了通知完成。
+- Webhook 接 CF 過濾後的任務 → 在 Slack 專用頻道開 thread，@Hark 查 Wiki → 沒有就 @cue 派工，等他貼回 thread（mail 備用） → @Instinct 驗證，過了才往下 → @Hark 生教案＋HTML 到暫存區 → @Instinct 終驗，過了通知完成。
 - 每站設 timeout，超時沒回就發警報（首頁紅字＋Slack 推播），不要靜靜卡住。
-- @ 一次只 @ 一隻。Cue 用 mail，不在 Slack 裡 @（他沒接 Slack，@ 了也不會回）。
+- @ 一次只 @ 一隻。Cue 用 Slack @cue（純文字，經 Manus 轉達）；mail 是備用，發了要貼進 thread 留紀錄。
 - n8n 有自己的 IP 跟網址，東京網站／CF Pages 只要打得到 webhook URL 就能用，不用同一台、同一區；webhook 要加驗證，不要裸奔；不要讓瀏覽器前端直接打，改由後端去打。
 
 ## Slack 流程

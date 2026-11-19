@@ -4,7 +4,7 @@
 
 ## 內容怎麼來
 
-1. **Ingest（Cue，經 mail）**：依 `topics/topic.yaml` 找 5 篇以上官方／技術文件，HTTP 200、內文非空、去重、官方優先。
+1. **Ingest（Cue，@cue）**：依 `topics/topic.yaml` 找 5 篇以上官方／技術文件，HTTP 200、內文非空、去重、官方優先。
 2. **結構化進 Wiki（Hark）**：把文件整理進本目錄的分章 Markdown，每個主張標來源。
 3. **驗證（Instinct）**：每個主張都有來源、沒有腦補、重點都有覆蓋、結構完整、來源之間沒有矛盾。不合格退回 ingest 補抓。
 

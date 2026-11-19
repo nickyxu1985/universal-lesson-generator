@@ -4,14 +4,14 @@
 
 ## 1. Thread 隔離：1 Job = 1 Thread
 
-- 每個教案生成任務在 Slack 教案專用頻道開一個獨立 Thread（n8n 收到 Webhook 後第一步先發主訊息，取得 `thread_ts` 寫回 D1 `jobs.slack_thread_ts`；n8n 還沒好時由 Nicky 手動開 Thread）。
+- 每個教案生成任務在 Slack 教案專用頻道開一個獨立 Thread（期末：n8n 收到 Webhook 後第一步先發主訊息，取得 `thread_ts` 寫回 D1 `jobs.slack_thread_ts`；W10：由 PM 在 #taica-w10-hw 開 Thread 派單）。
 - 該任務後續的派單、Agent 回覆、交接摘要、錯誤警示，**全部強制回覆在同一個 `thread_ts` 內**，避免多任務並發時上下文污染，也讓任何人點開任一 Thread 就能完整回放整份教案的誕生過程。
 - Thread 內只放當次交接：題目、受眾、job id、做到哪站、產出連結。skill 檔與流程定義本體在 repo，頻道只放連結跟討論（Slack 免費版 90 天就看不到了）。
 
 ## 2. HANDOFF Block 格式（每階段結束必貼）
 
 ```markdown
-### [HANDOFF] Stage: <stage_1_wiki | stage_2_lesson>
+### [HANDOFF] Stage: <stage_1_ingest | stage_2_wiki | stage_3a_retrieve | stage_3b_lesson | stage_4_slides>
 - **Job ID**: <job_id>
 - **Agent**: <cue | instinct | hark_pro>
 - **Status**: <PASS | FAIL | NEEDS_RETRY>
@@ -31,11 +31,11 @@
 - **驗證者永遠與生產者不同人**：同一隻 agent 驗證自己做的東西看不出盲點。驗證者只看產出＋原始來源，不看生產者的推理過程。
 - **FAIL 就停住該站**：發警報（首頁紅字＋Slack 推播），不讓錯的產出往下流；註明回哪站重做。
 - **NEEDS_RETRY 要寫原因**：缺什麼、哪裡矛盾、回哪站補，不要只寫「再試一次」。
-- **Cue 經 mail 來回**：Cue 沒接 Slack，n8n（或 Nicky）收到回信後把 Handoff 摘要貼進 Thread，下一站的 agent 直接讀前手交接狀態繼續執行。
-- **Muse 不進主幹道**：Slack @ 喚醒不穩定，不納入面向前端使用者的自動化流程。
+- **Cue 用 Slack @cue 派工**：純文字 @cue，經 Manus 轉達；mail 是備用，發了要把內容貼進 Thread 留紀錄。Cue 的 Handoff 摘要由 PM 貼進 Thread，下一站的 agent 直接讀前手交接狀態繼續執行。
+- **Muse 不進生產線，擔任 W10 PM**：任務協調＋專案 PM，在主對話對齊，派單與進度回報經 Slack thread。Slack @ 喚醒不穩定，不納入面向前端使用者的自動化流程。
 
 ## 4. 白盒化效益
 
 1. **來源可稽核**：階段一抓了哪 5 篇官方文件、有沒有混入農場文，在 Thread 一目了然。
 2. **除錯可定位**：教案品質不佳或格式解析失敗，打開該 `job_id` 對應的 Thread 就能看出是哪一隻 agent、在哪一個檢查點出錯。
-3. **跨 Agent 無縫接力**：即使階段一由 Cue（mail）執行，Handoff 摘要進 Thread 後，階段二的 Instinct／Hark Pro 就能直接接手。
+3. **跨 Agent 無縫接力**：即使階段一由 Cue（@cue）執行，Handoff 摘要進 Thread 後，階段二的 Instinct／Hark Pro 就能直接接手。
