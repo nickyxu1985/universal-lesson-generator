@@ -12,7 +12,7 @@
 
 ## 成品入口（Job 1 已完成，2026-11-19）
 
-- **LLM Wiki**：[wiki/workflow-selection/（5 頁）](https://github.com/nickyxu1985/universal-lesson-generator/tree/develop/wiki/workflow-selection) — 00 總覽、01 固定自動流、02 單一 Agent、03 Multi-Agent、04 選型決策；每則主張標來源 [A]–[E]。
+- **LLM Wiki**：[瀏覽頁（5 頁，可點閱）](https://raw.githack.com/nickyxu1985/universal-lesson-generator/develop/wiki/index.html) — 00 總覽、01 固定自動流、02 單一 Agent、03 Multi-Agent、04 選型決策；每則主張標來源 [A]–[E]。原始檔在 [wiki/workflow-selection/](https://github.com/nickyxu1985/universal-lesson-generator/tree/develop/wiki/workflow-selection)（v2 已合併；瀏覽頁目前顯示 v1，v2 重建後同步）。
 - **教學 HTML 簡報**：[workflow-selection 高中 × story（10 頁）](https://raw.githack.com/nickyxu1985/universal-lesson-generator/develop/slides/workflow-selection-%E9%AB%98%E4%B8%AD-story.html) — 園遊會故事貫穿，可翻頁、點測驗看答案；原始檔在 `slides/workflow-selection-高中-story.html`。
 - **執行證據**：[Job 1 handoff 紀錄](docs/handoffs/w10-poc-001.md)（各站驗收＋版本＋成品入口；老師只看得到 Repo）。
 
