@@ -36,10 +36,10 @@
    │         (本任務所有 Agent 互動與 handoff.md 交接皆隔離於此 Thread 內)      │
    │                                                                           │
    ├── [階段一：Wiki 未命中] ──────────────────────────────────────────────────┤
-   │     派單給 cue (信箱觸發) 或 instinct / hark pro (Slack Thread 內 @ 呼叫) │
+   │    派單給 cue (Slack @cue) 或 instinct / hark pro (Slack Thread 內 @ 呼叫) │
    │     (Agent 讀取 Repo 之 skill.md / task.md / handoff.md，嚴禁 Commit)     │
    │     -> 抓取 5 篇以上官方/技術文件 -> 產出結構化 Markdown + Handoff 紀錄    │
-   │     -> n8n 將階段一 Handoff 摘要貼入該 Slack Thread 存證                   │
+   │     -> 階段一 Handoff 摘要貼入該 Slack Thread 存證（走信箱時由 n8n 轉貼）  │
    │     -> n8n 呼叫內部 API 寫入 [CF R2: wiki/] 並建索引進 [CF D1]             │
    │                                                                           │
    └── [階段二：Wiki 已命中 / 階段一完成] ─────────────────────────────────────┤
@@ -243,10 +243,10 @@ CREATE TABLE jobs (
 * **白盒化效益**：
   1. **來源可稽核**：階段一抓了哪 5 篇官方文件、有沒有混入農場文，在 Slack Thread 一目了然。
   2. **除錯可定位**：若產出的教案品質不佳或格式解析失敗，打開該 `job_id` 對應的 Thread 即可立刻看出是哪一隻 Agent、在哪一個檢查點出錯。
-  3. **跨 Agent 無縫接力**：即使階段一由 `cue`（信箱觸發）執行，n8n 收到回信後將其 Handoff 摘要貼進 Slack Thread，階段二的 `instinct` / `hark pro` 就能直接讀取前手交接狀態繼續執行。
+  3. **跨 Agent 無縫接力**：即使階段一由 `cue`（Slack @cue；信箱是備用管路）執行，Cue 回覆後將其 Handoff 摘要貼進 Slack Thread（走信箱時由 n8n 轉貼），階段二的 `instinct` / `hark pro` 就能直接讀取前手交接狀態繼續執行。
 
 ### 7.3 Agent 職責分配與穩定性防呆
-* **階段一（深度爬蟲 5+ 篇官方文件 → 寫入 LLM-Wiki）**：優先派發給 **`cue`（信箱觸發，最穩定不易漏單）**，或於 Slack Thread 內派發給 **`instinct` / `hark pro`**。
+* **階段一（深度爬蟲 5+ 篇官方文件 → 寫入 LLM-Wiki）**：優先派發給 **`cue`（Slack @cue；信箱是備用管路）**，或於 Slack Thread 內派發給 **`instinct` / `hark pro`**。
 * **階段二（依受眾與風格產出 Obsidian 詳案 ＋ HTML 簡報 JSON）**：於同一 Slack Thread 內 `@instinct` 或 `@hark pro`（完整 Bot 身分與 MCP），n8n 監聽該 Thread 收件。
 * **`muse` 排除於主幹道**：因僅能透過旗標喚醒且漏接率高，不納入面向前端使用者的自動化流程。
 * **簡報母版分離組裝**：Agent 僅產出乾淨的簡報結構 JSON，由 n8n 或 `job-update` API 注入 `templates/slides.html` 母版後存進 R2，徹底根治 HTML 破版問題。
