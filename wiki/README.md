@@ -27,5 +27,6 @@ wiki/
 
 ## 目前狀態
 
-- **內容尚未建立**：範例主題（固定自動流 → 單一 Agent → Multi-Agent 選型）的 6 個來源 URL 還在 `topics/topic.yaml` 裡待補（以 Slack #taica-w10-hw 討論串核對清單為準），補上並通過 HTTP 200＋內文非空檢查後，Cue 才能開工 ingest。
+- `workflow-selection/`：範例主題（固定自動流 → 單一 Agent → Multi-Agent 選型）5 頁已建立，來源 [A]–[E] 為 Cue stage_1_ingest 五篇（Instinct PASS）；stage_2_wiki 內容經 Instinct 驗收 PASS（Job w10-poc-001）。每頁頁尾附「本頁來源」標題與 URL。
+- Google 官方來源仍從缺（`topics/topic.yaml` TODO），目前五篇已達門檻。
 - 檔案命名與分章細節以 `agents/wiki.md` 為準。
