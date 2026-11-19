@@ -55,6 +55,7 @@
 3. Instinct 驗收（PASS／FAIL）；驗收通過 PM 才合併（develop）／結案。
 4. 交棒紀錄：Thread + Repo `docs/handoffs/<job-id>.md` 雙份，PM 維護。
 5. **留名**：每個 PR／issue／merge／commit 都要留名（PR／issue 開頭 By \<agent\>，merge 寫執行者，commit 訊息結尾 By \<agent\>）；沒留名＝交接不完整。
+6. **10 分鐘無回應 → PM @ 問進度**（2026-11-19 使用者定案：15 分鐘還是太久）。工作量都不大，大多不會超過 10 分鐘，超過就是卡住或沒叫醒。舊規則（15 分鐘檢查、60 分鐘沒動叫使用者）仍是叫使用者的門檻；10 分鐘是 PM 自己 @ 問進度的門檻。
 
 ## 5. 已知限制與待修
 
