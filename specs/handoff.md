@@ -31,7 +31,7 @@
 
 - **交棒必須 @ 下一棒**：HANDOFF Block 的 Next Action 要用 Slack 正式 mention（`<@USER_ID>`，不是純文字名字）點名下一站的 agent；驗收通過放行下一站時也要 @。沒 @ 的交棒不算完成——對方收不到通知，就不會動。Hark `U0CEM7V0R53`、Instinct `U0CBVT12GV7`；Cue 沒有 Slack 帳號，`@cue` 是純文字、由 n8n 轉信（見下）。
 
-- **bot 發的 @ 叫不醒 Hark（2026-11-19 實證）**：Hark 的 Slack 入口會忽略 bot 發的訊息。Instinct 用 bot 身分發的 @（3a、站 2 PASS、15:08 的 3b PASS）一次都沒叫醒他；每次都是 Muse 用 Nicky 的使用者帳號再補一個 @，他才在 2 秒內回。不是 @ 格式錯，是發話身分不對。**W10 暫時解法：PM（Muse）手動補 @**——Instinct → Hark 的交棒由 PM 在同 thread 用使用者帳號補貼一則 @Hark 接棒訊息。**期末解法（2026-11-19 Nicky 定）：n8n 轉發**——n8n 監看各作業頻道，遇到 bot 發的、含 `<@U0CEM7V0R53>` 的訊息，就用 Nicky 的使用者 token 在同 thread 補貼一則短訊；只轉 Instinct、Cue 這類其他 agent 的 bot，排除 Hark 自己的 bot（`B0CEQHLUGKY`）與 Nicky 帳號發的訊息（否則 @ 別人可能被轉回來叫醒自己）；同一則用 ts 去重，只轉一次。
+- **bot 發的 @ 叫不醒 Hark（2026-11-19 實證）**：Hark 的 Slack 入口會忽略 bot 發的訊息。Instinct 用 bot 身分發的 @（3a、站 2 PASS、15:08 的 3b PASS）一次都沒叫醒他；每次都是 Muse 用 使用者帳號再補一個 @，他才在 2 秒內回。不是 @ 格式錯，是發話身分不對。**W10 暫時解法：PM（Muse）手動補 @**——Instinct → Hark 的交棒由 PM 在同 thread 用使用者帳號補貼一則 @Hark 接棒訊息。**期末解法（2026-11-19 使用者決定）：n8n 轉發**——n8n 監看各作業頻道，遇到 bot 發的、含 `<@U0CEM7V0R53>` 的訊息，就用 使用者 token 在同 thread 補貼一則短訊；只轉 Instinct、Cue 這類其他 agent 的 bot，排除 Hark 自己的 bot（`B0CEQHLUGKY`）與 使用者帳號發的訊息（否則 @ 別人可能被轉回來叫醒自己）；同一則用 ts 去重，只轉一次。
 
 - **驗證者永遠與生產者不同人**：同一隻 agent 驗證自己做的東西看不出盲點。驗證者只看產出＋原始來源，不看生產者的推理過程。
 - **FAIL 就停住該站**：發警報（首頁紅字＋Slack 推播），不讓錯的產出往下流；註明回哪站重做。

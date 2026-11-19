@@ -26,7 +26,7 @@
 | Hark | 查 Wiki、驗來源＋Wiki、整理重點、產 HTML＋美工 | 不碰 ingest |
 | Cue | ingest 找資料、檢索（Slack @cue 派工：n8n 轉發信箱；或直接 mail） | — |
 | Muse | W10 PM：任務協調＋專案 PM（不進產線；Slack @ 不穩定，在主對話對齊） | 不接任何一站（只做協調、追蹤、驗收） |
-| Nicky | n8n 照舊跑（不用改）；開 Slack 期末教案頻道；W10 派工在 #taica-w10-hw；驗收 | — |
+| 使用者 | n8n 照舊跑（不用改）；開 Slack 期末教案頻道；W10 派工在 #taica-w10-hw；驗收 | — |
 
 ## Repo 結構
 
@@ -50,16 +50,16 @@ docs/
 ## 分支：develop / main
 
 - 平常工作都在 **`develop`**。docs／feature 從 `develop` 開出、合併回 `develop`。
-- **`main` 只收來自 `develop` 的 PR**，且只在功能驗收＋Nicky 明確同意後合併。沒有驗收、沒有同意，絕不合併到 `main`。
+- **`main` 只收來自 `develop` 的 PR**，且只在功能驗收＋使用者明確同意後合併。沒有驗收、沒有同意，絕不合併到 `main`。
 - 這個 repo 會從 W10 POC 成長成期末專案：W10 交件時打 tag 留版，期末繼續在同一個 repo 上加功能，不另開 repo。
 
 ## T0：開工前要先打開的基礎建設
 
 1. 定 repo 名 → 已定：`universal-lesson-generator`（2026-11-19）。
-2. GitHub UI 建 repo → 已建（Nicky）。
+2. GitHub UI 建 repo → 已建（使用者）。
 3. 推起手包到 `develop` → 本次推送。
-4. 開 Slack 期末教案頻道 #universal-lesson-generator（1 Job = 1 Thread）→ 已開（Nicky）；W10 派工仍在 #taica-w10-hw。
-5. 補 `topics/topic.yaml` 裡 6 個來源 URL（以 Slack #taica-w10-hw 討論串核對清單為準，每篇過 HTTP 200＋內文非空檢查）→ 待 Nicky。
+4. 開 Slack 期末教案頻道 #universal-lesson-generator（1 Job = 1 Thread）→ 已開（使用者）；W10 派工仍在 #taica-w10-hw。
+5. 補 `topics/topic.yaml` 裡 6 個來源 URL（以 Slack #taica-w10-hw 討論串核對清單為準，每篇過 HTTP 200＋內文非空檢查）→ 待使用者。
 6. n8n 照舊跑，不用改（春川；Cue 的 @cue 通道與每站 timeout 警報照舊）→ W10 在 #taica-w10-hw 開 Thread 派單。
 
 ## 成本：$0 / 月

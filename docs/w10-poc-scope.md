@@ -1,6 +1,6 @@
 # W10 POC 切片 — 從期末規格書切出來的本次作業範圍
 
-> 來源：期末完整規格書《萬用教案生成器 — 系統開發規格書 (SPEC)》（`workspace/user/files/code_artifact.md`，2026-11-19 Neon 討論版，已按 Nicky 四點修正：受眾 3 檔、handoff.md、Slack 1 Job = 1 Thread、前段 CF 後段 Slack 工廠；Section 9 的 Day 1～11 路線圖僅供參考）。
+> 來源：期末完整規格書《萬用教案生成器 — 系統開發規格書 (SPEC)》（`workspace/user/files/code_artifact.md`，2026-11-19 Neon 討論版，已按使用者四點修正：受眾 3 檔、handoff.md、Slack 1 Job = 1 Thread、前段 CF 後段 Slack 工廠；Section 9 的 Day 1～11 路線圖僅供參考）。
 > 定位：W10 是期末的 POC，先跑通一條線，證明整套流程可行，期末再放大。不要把期末的完整系統塞進 W10。
 
 ## 1. W10 作業本體（不變）
@@ -44,7 +44,7 @@
 
 ## 5. POC 的實際跑法（最小可行流水線）
 
-1. Nicky 開 Slack 專屬教案頻道（例如 `#lesson-gen-jobs`），本次 Job 開一個 Thread（1 Job = 1 Thread）。
+1. 使用者開 Slack 專屬教案頻道（例如 `#lesson-gen-jobs`），本次 Job 開一個 Thread（1 Job = 1 Thread）。
 2. Cue（@cue）ingest：抓 5 篇以上官方／技術文件，結構化進 LLM-Wiki，貼 HANDOFF Block 到 Thread。
 3. Instinct 驗證＋結構化進 Wiki（與生產者不同人驗證）。
 4. Hark 查 Wiki、驗來源＋Wiki，整理重點＋生簡報結構 JSON，套母版成 HTML，貼 HANDOFF Block 到 Thread。
@@ -72,7 +72,7 @@
 - [ ] 一次執行反思：哪個節點最常出錯、檢查往前移到哪一步、有沒有改 workflow
 - [ ] Repo handoff 紀錄檔 `docs/handoffs/w10-poc-001.md`（執行證據，老師看得到）＋ Slack Thread 連結
 
-## 8. 只有 Nicky 能做的（POC 也一樣）
+## 8. 只有使用者能做的（POC 也一樣）
 
 - GitHub UI 建 repo（Muse 無法建倉；repo 名待定：SPEC 寫 `lesson-generator/`，先前另有 `universal-lesson-generator` 候選）。
 - 開 Slack 專屬教案頻道。
@@ -82,4 +82,4 @@
 ## 9. 另記：W11 是補救作業（與 W10 分開）
 
 - W11 居然是補救作業：前 10 次作業有不滿意或缺交的可以補。
-- Nicky 要補的是**期末專案發想作業**（漏了沒做）。這與 W10 無關，另案處理；要補的內容與繳交期限待確認。
+- 使用者要補的是**期末專案發想作業**（漏了沒做）。這與 W10 無關，另案處理；要補的內容與繳交期限待確認。
