@@ -24,10 +24,12 @@
   - [x] 未包含任何未經查證之幻覺數據或無效連結
   - [x] 未對 GitHub Repo 執行任何 commit / push
   - [x] 符合 obsidian-note-spec.md Frontmatter 規範（期末才適用，W10 略過此條）
-- **Next Action / Notes**: <交接給下一階段的重點提醒，或失敗原因說明>
+- **Next Action / Notes**: <交接給下一階段的重點提醒，或失敗原因說明；須用 Slack 正式 mention @ 下一棒，見 §3>
 ```
 
 ## 3. 規則
+
+- **交棒必須 @ 下一棒**：HANDOFF Block 的 Next Action 要用 Slack 正式 mention（`<@USER_ID>`，不是純文字名字）點名下一站的 agent；驗收通過放行下一站時也要 @。沒 @ 的交棒不算完成——對方收不到通知，就不會動。Hark `U0CEM7V0R53`、Instinct `U0CBVT12GV7`；Cue 沒有 Slack 帳號，`@cue` 是純文字、由 n8n 轉信（見下）。
 
 - **驗證者永遠與生產者不同人**：同一隻 agent 驗證自己做的東西看不出盲點。驗證者只看產出＋原始來源，不看生產者的推理過程。
 - **FAIL 就停住該站**：發警報（首頁紅字＋Slack 推播），不讓錯的產出往下流；註明回哪站重做。
