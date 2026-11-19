@@ -6,10 +6,10 @@
 ## 入口（首頁，CF Pages）
 
 - 輸入主題、選受眾（國小／國中／高中）、按生成；底下顯示目前進度、已產生教案連結、取消按鍵。
-- 送出先 POST 到同站 `/api/filter`，Pages Function 再打 Gemini 3.6 Flash 過濾：主題合不合理、受眾有沒有選、有沒有重複。亂入直接否決，不燒後面整條線。
-- 過了才 POST 春川 n8n webhook。瀏覽器前端不直接打 Gemini（key 會外洩），也不直接打 n8n。
+- 送出先 POST 到同站 `/api/filter`，由 CF Workers AI 守門（18 禁／K-12 適齡／Prompt 注入偵測＋主題淨化）：主題合不合理、受眾有沒有選、有沒有重複。亂入直接否決，不燒後面整條線。
+- 過了才 POST 春川 n8n webhook。瀏覽器前端不直接打 Workers AI，也不直接打 n8n。
 
-## 0. 守門員（Gemini 3.6 Flash，免費）
+## 0. 守門員（CF Workers AI）
 
 - 只判斷過／不過，不做生成。輸入：主題＋受眾；輸出：pass／fail＋理由。
 - 失敗：首頁顯示否決原因，流程結束，不進 n8n。

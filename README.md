@@ -25,9 +25,8 @@
 | Instinct | 專職驗證＋結構化進 Wiki（驗 ingest、驗最終 HTML） | 不生產教案、不做美工 |
 | Hark | 查 Wiki、驗來源＋Wiki、整理重點、產 HTML＋美工 | 不碰 ingest |
 | Cue | ingest 找資料、檢索（經 mail 來回，沒接 Slack） | 不進 Slack thread |
-| Gemini 3.6 Flash | 守門員：只過濾首頁輸入，亂入直接否決 | 不做生成 |
 | Muse | 這次不進產線（Slack @ 不穩定），只在主對話幫對齊 | 不接任何一站 |
-| Nicky | 重做 n8n 流程；開 Slack 教案頻道；驗收 | — |
+| Nicky | 重做 n8n 流程；開 Slack 期末教案頻道；W10 派工在 #taica-w10-hw；驗收 | — |
 
 ## Repo 結構
 
@@ -59,7 +58,7 @@ docs/
 1. 定 repo 名 → 已定：`universal-lesson-generator`（2026-11-19）。
 2. GitHub UI 建 repo → 已建（Nicky）。
 3. 推起手包到 `develop` → 本次推送。
-4. 開 Slack 教案專用頻道（1 Job = 1 Thread），拉 Instinct、Hark Pro、n8n Bot → 已開（Nicky）。
+4. 開 Slack 期末教案頻道 #universal-lesson-generator（1 Job = 1 Thread）→ 已開（Nicky）；W10 派工仍在 #taica-w10-hw。
 5. 補 `topics/topic.yaml` 裡 6 個來源 URL（以 Slack #taica-w10-hw 討論串核對清單為準，每篇過 HTTP 200＋內文非空檢查）→ 待 Nicky。
 6. n8n 流程重做（春川，含 Cue 的 mail 通道與每站 timeout 警報）→ W10 可先手動開 Thread 派單，n8n 做好再接上，不用等它。
 

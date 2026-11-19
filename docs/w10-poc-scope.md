@@ -35,7 +35,7 @@
 
 ## 4. 切掉的（期末再做，W10 不做）
 
-- §2／§4 的完整守門員：Turnstile、Workers AI 語意守門、D1 每日總量／IP 限流閘門、X-Secret-Token — POC 用原本定的 Gemini 3.6 Flash 過濾即可，不建完整防護。
+- §2／§4 的完整守門員：Turnstile、Workers AI 語意守門、D1 每日總量／IP 限流閘門、X-Secret-Token — POC 沒有輸入口，不用守門員，完整 CF 守門留到期末。
 - §5 D1 完整建表（daily_quota、categories、wiki_docs、wiki_fts、lessons、jobs）— POC 不建 D1，進度與紀錄以 Slack Thread＋handoff.md 為準。
 - §6 的四頁全站（首頁生成表單＋進度條、/wiki 搜尋頁、/s/:id、/admin 後台）— POC 只要兩條連結：Wiki 成果＋HTML 簡報，不做首頁與後台。
 - §3.3 Obsidian 教師詳案 `.md`＋obsidian-note-spec.md＋Remotely Save 直連 R2 雙向同步 — 全部是期末，W10 不做。W10 照老師要求：Wiki＋HTML 簡報就好。
