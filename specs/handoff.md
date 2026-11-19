@@ -7,6 +7,7 @@
 - 每個教案生成任務在 Slack 教案專用頻道開一個獨立 Thread（期末：n8n 收到 Webhook 後第一步先發主訊息，取得 `thread_ts` 寫回 D1 `jobs.slack_thread_ts`；W10：由 PM 在 #taica-w10-hw 開 Thread 派單）。
 - 該任務後續的派單、Agent 回覆、交接摘要、錯誤警示，**全部強制回覆在同一個 `thread_ts` 內**，避免多任務並發時上下文污染，也讓任何人點開任一 Thread 就能完整回放整份教案的誕生過程。
 - Thread 內只放當次交接：題目、受眾、job id、做到哪站、產出連結。skill 檔與流程定義本體在 repo，頻道只放連結跟討論（Slack 免費版 90 天就看不到了）。
+- **W10：Repo 也要留 handoff 紀錄**：HANDOFF Block 除了貼 Thread，PM 還要彙整進 Repo `docs/handoffs/<job-id>.md`。老師只看得到 Repo，看不到 Slack；Slack 免費版 90 天後 Thread 也看不到了。Thread 是工作現場，Repo 檔案是繳交證據。
 
 ## 2. HANDOFF Block 格式（每階段結束必貼）
 
@@ -33,6 +34,7 @@
 - **NEEDS_RETRY 要寫原因**：缺什麼、哪裡矛盾、回哪站補，不要只寫「再試一次」。
 - **Cue 派工有兩種**：Slack @cue（純文字 @cue，n8n 收到後發信給 Cue，回覆經 Manus 回到 Thread）或直接 mail（回信進信箱，由 PM 轉貼進 Thread 留紀錄）。下一站的 agent 直接讀前手交接狀態繼續執行。
 - **Muse 不進生產線，擔任 W10 PM**：任務協調＋專案 PM，在主對話對齊，派單與進度回報經 Slack thread。Slack @ 喚醒不穩定，不納入面向前端使用者的自動化流程。
+- **Repo handoff 紀錄由 PM 維護**：每站結束後，PM 把 Thread 裡的 HANDOFF Block 彙整進 Repo `docs/handoffs/<job-id>.md`，再推上 develop（Muse 經 connector 推；封閉式 Agent 仍禁止直接 commit／push，見 §2 自檢條）。
 
 ## 4. 白盒化效益
 

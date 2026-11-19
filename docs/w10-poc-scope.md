@@ -36,7 +36,7 @@
 ## 4. 切掉的（期末再做，W10 不做）
 
 - §2／§4 的完整守門員：Turnstile、Workers AI 語意守門、D1 每日總量／IP 限流閘門、X-Secret-Token — POC 沒有輸入口，不用守門員，完整 CF 守門留到期末。
-- §5 D1 完整建表（daily_quota、categories、wiki_docs、wiki_fts、lessons、jobs）— POC 不建 D1，進度與紀錄以 Slack Thread＋handoff.md 為準。
+- §5 D1 完整建表（daily_quota、categories、wiki_docs、wiki_fts、lessons、jobs）— POC 不建 D1，進度與紀錄以 Slack Thread＋Repo `docs/handoffs/` 紀錄檔為準（老師只看得到 Repo）。
 - §6 的四頁全站（首頁生成表單＋進度條、/wiki 搜尋頁、/s/:id、/admin 後台）— POC 只要兩條連結：Wiki 成果＋HTML 簡報，不做首頁與後台。
 - §3.3 Obsidian 教師詳案 `.md`＋obsidian-note-spec.md＋Remotely Save 直連 R2 雙向同步 — 全部是期末，W10 不做。W10 照老師要求：Wiki＋HTML 簡報就好。
 - 多受眾 × 多風格矩陣、最近 10 筆、分類管理 — 期末。
@@ -49,7 +49,7 @@
 3. Instinct 驗證＋結構化進 Wiki（與生產者不同人驗證）。
 4. Hark 查 Wiki、驗來源＋Wiki，整理重點＋生簡報結構 JSON，套母版成 HTML，貼 HANDOFF Block 到 Thread。
 5. Instinct 終驗，Thread 標記完成 ✅。
-6. n8n 照舊跑，不用改；POC 在 #taica-w10-hw 開 Thread 派單，**要求不變的是 Thread 裡要有完整 handoff 紀錄**（這是反思的證據）。
+6. n8n 照舊跑，不用改；POC 在 #taica-w10-hw 開 Thread 派單，**要求不變的是 Thread 裡＋Repo `docs/handoffs/` 都要有完整 handoff 紀錄**（這是反思的證據；老師只看得到 Repo）。
 
 ## 6. Loop / Graph（W10 繳交用，照 SPEC §2 簡化）
 
@@ -70,7 +70,7 @@
 - [ ] 教學 HTML 簡報連結（高中／story 一版）
 - [ ] loop / graph 流程圖或文字說明（§6）
 - [ ] 一次執行反思：哪個節點最常出錯、檢查往前移到哪一步、有沒有改 workflow
-- [ ] Slack Thread 連結（本次 Job 的完整 handoff 紀錄，作為執行證據）
+- [ ] Repo handoff 紀錄檔 `docs/handoffs/w10-poc-001.md`（執行證據，老師看得到）＋ Slack Thread 連結
 
 ## 8. 只有 Nicky 能做的（POC 也一樣）
 
