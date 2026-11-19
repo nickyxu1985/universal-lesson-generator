@@ -40,9 +40,9 @@ flowchart TD
 | 步驟 | 作業要求 | 狀態 |
 |---|---|---|
 | 一、建立 LLM Wiki | 至少 ingest 5 篇資料 | ✅ 完成 — 5 篇官方來源，[wiki/workflow-selection/](https://github.com/nickyxu1985/universal-lesson-generator/tree/develop/wiki/workflow-selection) |
-| 二、教學 HTML 簡報 | 可實際瀏覽，讓不熟悉主題的人理解基本概念 | ✅ 完成 — 10 頁，[簡報連結](https://raw.githack.com/nickyxu1985/universal-lesson-generator/develop/slides/workflow-selection-%E9%AB%98%E4%B8%AD-story.html) |
+| 二、教學 HTML 簡報 | 可實際瀏覽，讓不熟悉主題的人理解基本概念 | ✅ 完成 — 16 頁（15 頁 30 分鐘＋課後附錄），[簡報連結](https://raw.githack.com/nickyxu1985/universal-lesson-generator/develop/slides/workflow-selection-%E9%AB%98%E4%B8%AD-story.html) |
 | 三、loop / graph 設計 | 哪些步驟重複、哪些地方檢查或重新生成、為什麼這樣設計 | ✅ 完成 — 上節流程圖＋文字說明 |
-| 四、一次執行反思 | 哪個節點最常出錯、檢查往前移到哪一步、有沒有因此修改 workflow | ⏳ 待補 — Hark 可先起草（素材：ReAct 數字筆誤、PR #1 merged 查詢不一致、HANDOFF 漏 @） |
+| 四、一次執行反思 | 哪個節點最常出錯、檢查往前移到哪一步、有沒有因此修改 workflow | ✅ 完成 — [反思稿](https://github.com/nickyxu1985/universal-lesson-generator/blob/develop/docs/reflections/w10-poc-004.md)（v1 vs v2，PR #10） |
 
 繳交清單全文見 `docs/w10-poc-scope.md` §7。
 
