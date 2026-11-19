@@ -1,0 +1,25 @@
+# 第一範例主題（換題重跑時只改這檔＋來源清單）
+
+topic: "通用教案產生器 — 以自動流程選型為例"
+example: "固定自動流 → 單一 Agent → Multi-Agent，遇到什麼問題，怎麼選"
+audiences:
+  - 國小
+  - 國中
+  - 高中
+
+# 範例來源起點：Hermes #1 已實測 6 篇有正文。
+# URL 待補：以 Slack #taica-w10-hw 討論串的核對清單為準，補上後每篇都要過
+# HTTP 200＋內文非空檢查（見 agents/ingest.md）。
+sources:
+  - name: n8n 官方文件
+    url: TODO
+  - name: Anthropic 官方文件
+    url: TODO
+  - name: OpenAI 官方文件
+    url: TODO
+  - name: ReAct 論文／官方說明
+    url: TODO
+  - name: LangGraph 官方文件
+    url: TODO
+  - name: Google 官方文件
+    url: TODO
