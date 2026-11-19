@@ -1,27 +1,78 @@
 # 02 單一 Agent
 
-## 定義與運作
-- Agent 由 LLM 動態決定自己的流程與工具使用。[B][E]
-- 實作上通常就是「LLM 根據環境回饋、在迴圈中使用工具」。[B][E]
-- 每一步要從環境取得「ground truth」（例如工具結果、程式執行結果）來判斷進度；可在檢查點或卡住時停下來問人；常設停止條件（例如最大迭代次數）。[B]
-- n8n 的 Agent 節點會決定要呼叫哪些工具，並可使用記憶。[A]
+> Job：w10-poc-004（v2，Wiki 增量）｜主張後的 [A]–[E] 對應頁尾來源；標「示意」的是本 Wiki 的教學情境，標「本 Wiki 推論」的是由來源推出、非原文的句子。
 
-## 理論根源：ReAct
-- ReAct 讓 LLM 交錯產生「推理軌跡」與「行動」：推理幫助擬定、追蹤、更新計畫與處理例外；行動讓模型接觸外部來源（知識庫、環境）取得資訊。[D]
-- 在 HotpotQA 與 Fever 上，透過呼叫簡單的 Wikipedia API，減少思維鏈推理常見的幻覺與錯誤傳遞。[D]
-- 在 ALFWorld 與 WebShop 兩個互動決策 benchmark 上，ReAct 只用 1–2 個範例提示（one/two-shot），絕對成功率分別比模仿學習與強化學習方法高 34 與 10 個百分點。[D]
-  - ⚠️ 這是論文在這兩個特定 benchmark、對上述比較對象的結果，不能寫成「一般 Agent 都會提升 34／10 個百分點」。
+## 一、定義
 
-## 適合時機
-- 開放式問題：很難或無法預測需要幾步，也無法寫死固定路徑。[B]
-- 需要彈性與模型自行決策的規模化任務。[B]
+- **Agent 由 LLM 自己主導流程**：agent 是 LLM 動態主導自己的流程與工具使用、自己掌握如何完成任務的系統。[B] LangGraph 的說法是：agent 是動態的，會自己定義流程與工具使用。[E]
+- **實作上通常很單純**：agent 能處理複雜任務，但實作往往很直接，通常就是「LLM 根據環境回饋，在迴圈裡使用工具」。[B] LangGraph 也說 agent 通常實作成「LLM 使用工具執行動作」，在持續的回饋迴圈中運作。[E]
+- **自主，但不是沒有邊界**：agent 比 workflow 更有自主性，可以決定要用哪些工具、怎麼解題；但開發者仍然可以定義可用的工具組，以及 agent 行為的準則。[E]
+- **n8n 的產品定義**：n8n 的 AI Agent 節點會和工作流程中的其他元件互動，決定要使用哪些工具，並且可以使用記憶；n8n 對 AI agent 的說明是能回應請求、做決定、替使用者執行真實世界任務的 AI 系統。[A]
 
-## 代價與風險
-- 成本較高，錯誤可能累積（compounding errors）；建議在沙盒大量測試並設護欄。[B]
-- agentic system 通常用延遲與成本換更好的任務表現。[B]
+## 二、運作方式
+
+### 1. 一次任務的生命週期（Anthropic 的描述）[B]
+1. **開始**：agent 從使用者的指令，或與使用者的互動討論開始工作。
+2. **規劃與執行**：任務清楚後，agent 自己規劃、獨立運作，必要時回頭向使用者要更多資訊或判斷。
+3. **每一步取得 ground truth**：執行中，agent 每一步都要從環境取得「真實結果」來評估進度，例如工具呼叫的結果或程式執行的結果。
+4. **檢查點與卡關**：在檢查點，或遇到阻礙時，agent 可以暫停下來等人回饋。
+5. **結束**：任務通常在完成時結束，但也常加上停止條件（例如最大迭代次數）來保持控制。
+
+### 2. 工具迴圈長什麼樣（LangGraph 的圖）[E]
+- 圖裡只有兩個主要節點：一個是 LLM 呼叫（`llm_call`），一個是執行工具的節點（`tool_node`）。
+- 從起點進入 LLM 呼叫；接著由一條條件邊判斷 LLM 有沒有發出工具呼叫：有，就去執行工具，執行完再回到 LLM；沒有，就結束。
+- 範例中，agent 拿到加、乘、除三個工具，被問「3 加 4」時，由 LLM 決定要呼叫哪個工具。
+- LangGraph 的 `ToolNode` 是預建的工具執行節點，會自動處理平行執行工具、錯誤處理與狀態注入。
+
+### 3. 理論根源：ReAct（推理＋行動交錯）[D]
+- 過去 LLM 的「推理」（例如 chain-of-thought）與「行動」（例如產生行動計畫）多被分開研究。
+- ReAct 讓 LLM 交錯產生推理軌跡與針對任務的行動：推理軌跡幫助模型擬定、追蹤、更新行動計畫，並處理例外；行動讓模型能接觸外部來源（例如知識庫或環境）蒐集更多資訊。
+- 這正好對應 Anthropic 說的「每一步從環境取得 ground truth」[B]：行動取得的結果，就是下一輪推理的依據（本 Wiki 推論，把兩份來源的描述對照）。
+
+### 4. 工具就是 agent 的介面
+因為 agent 本質上是「在迴圈裡用工具的 LLM」，所以工具組與工具文件要設計得清楚而周到。[B] Anthropic 把這稱為 agent 與電腦之間的介面（ACI），建議投入跟設計人機介面（HCI）一樣多的心力：[B]
+- 站在模型的角度想：看描述與參數就知道怎麼用嗎？好的工具定義常包含使用範例、邊界情況、輸入格式要求，以及和其他工具的清楚分界。
+- 改參數名稱或描述讓它更明顯，就像替團隊裡的新進工程師寫一份好的 docstring；有很多相似工具時特別重要。
+- 實際測試模型怎麼用工具：跑大量範例輸入，看模型犯什麼錯，再迭代。
+- 防呆（poka-yoke）：改變參數設計，讓模型更難犯錯。
+- 工具格式的建議：給模型足夠的 token 先「想」；格式貼近網路上自然出現的文字；避免格式負擔，例如要精確數幾千行程式碼，或替程式碼做字串跳脫。
+
+## 三、例子
+
+### 來源裡的例子
+- **ReAct 的實驗**：在問答（HotpotQA）與事實查核（Fever）上，ReAct 透過與簡單的 Wikipedia API 互動，克服 chain-of-thought 推理常見的幻覺與錯誤傳遞問題，產生的解題軌跡比沒有推理軌跡的基準更容易解讀。[D] 在兩個互動式決策 benchmark（ALFWorld 與 WebShop）上，ReAct 只用一到兩個情境內範例提示，絕對成功率分別比模仿學習與強化學習方法高 34 與 10 個百分點。[D]
+- **Anthropic 自己的實作**：解決 SWE-bench 任務的程式碼 agent（依任務描述修改很多檔案），以及讓 Claude 操作電腦完成任務的 computer use 參考實作。[B]
+- **SWE-bench 的工具教訓**：建 SWE-bench agent 時，Anthropic 花在優化工具的時間比優化整體 prompt 還多；模型在 agent 離開根目錄後使用相對路徑會出錯，改成工具一律要求絕對路徑後，模型就能完美使用。[B]
+- **客服與程式碼**：客服適合比較開放的 agent，因為對話中需要外部資訊與動作（查顧客資料、訂單、知識庫，處理退款或更新工單），成功也能用使用者定義的「問題解決」來衡量。[B] 程式碼 agent 特別有效，因為解法能用自動化測試驗證、能用測試結果迭代、問題空間定義清楚、輸出品質可客觀衡量；但人工審查仍然重要，才能確保解法符合更大的系統需求。[B]
+- **n8n 的範例**：AI Agent 接了 Wikipedia 工具與 Simple Memory，可以查 Wikipedia 文章，也能回答「我上一個問題是什麼？」。[A]
+
+### 示意：園遊會
+「想辦法讓攤位不撞名又有人潮」：agent 先查已登記的攤位名單（行動）→ 發現有兩攤都叫「珍奶站」（觀察）→ 想到要請其中一攤改名、再查人潮動線（推理）→ 再查場地圖（行動）……事先不知道要幾步，只能邊做邊決定，這就是 agent 的典型情境。
+
+## 四、適用情境與取捨
+
+### 什麼時候用
+- **開放式問題**：很難或不可能事先預測需要幾步、也無法寫死固定路徑時。[B] LangGraph 的說法是：用在問題與解法都難以預測的情況。[E]
+- **可以信任它的決策**：LLM 可能會跑很多輪，你必須對它的決策有一定程度的信任；agent 的自主性讓它很適合在受信任的環境中擴大規模執行任務。[B]
+- **最能發揮價值的任務特徵**：同時需要對話與行動、有清楚的成功標準、能形成回饋迴圈，並且納入有意義的人工監督。[B]
+
+### 付出的代價
+- **成本較高、錯誤會累積**：自主性意味著較高的成本，以及錯誤一路累積（compounding errors）的可能；建議在沙盒環境中大量測試，並設置適當的護欄。[B]
+- **延遲與成本換表現**：agentic system 常以延遲與成本換取更好的任務表現。[B]
+- **可控性**：要用停止條件（例如最大迭代次數）保持控制，並在檢查點讓人介入。[B]
+
+## 五、常見錯誤
+
+1. **路徑其實寫得死，卻用 Agent**：任務能乾淨拆成固定子任務時，prompt chaining 等 workflow 就夠了，而且更可預測（見 01）。[B]
+2. **不設停止條件**：沒有最大迭代次數之類的條件，就少了保持控制的手段。[B]
+3. **不看環境回饋、憑空推進**：agent 每一步都要從環境取得 ground truth 評估進度 [B]；ReAct 的實驗也顯示，與外部來源互動能減少幻覺與錯誤傳遞 [D]。
+4. **只改 prompt、不改工具**：工具定義應該得到和整體 prompt 一樣多的提示工程關注 [B]；SWE-bench 的例子中，改工具（改成絕對路徑）才解決錯誤 [B]。
+5. **以為有自動測試就不用人看**：自動化測試能驗證功能，但人工審查仍是確保解法符合系統需求的關鍵。[B]
+6. **把 ReAct 的數字講成通則**：34 與 10 個百分點只是 ALFWorld 與 WebShop 上、對上模仿學習與強化學習方法的結果，不能說成「一般 Agent 都會提升 34／10 個百分點」。[D]
+7. **混用產品與通用定義**：「Agent 可以用記憶、chain 不行」是 n8n 節點的定義 [A]，不是 workflow 與 agent 在一般架構上的分界（分界在誰決定路徑 [B][E]）。
 
 ## 本頁來源
-- [A] n8n — Agents vs chains：<https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains>
-- [B] Anthropic — Building effective agents（2024-12-19）：<https://www.anthropic.com/research/building-effective-agents>
-- [D] Yao et al. — ReAct: Synergizing Reasoning and Acting in Language Models（arXiv:2210.03629，v3 2023-03-10）：<https://arxiv.org/abs/2210.03629>
-- [E] LangGraph — Workflows and agents：<https://docs.langchain.com/oss/python/langgraph/workflows-agents>
+- [A] n8n — Agents vs chains：<https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains>（存檔 `raw/A-n8n-agents-vs-chains.md`）
+- [B] Anthropic — Building effective agents（2024-12-19）：<https://www.anthropic.com/research/building-effective-agents>（存檔 `raw/B-anthropic-building-effective-agents.md`）
+- [D] Yao et al. — ReAct: Synergizing Reasoning and Acting in Language Models（arXiv:2210.03629，v3 2023-03-10，引用摘要頁）：<https://arxiv.org/abs/2210.03629>（存檔 `raw/D-react-arxiv-2210.03629.md`）
+- [E] LangGraph — Workflows and agents：<https://docs.langchain.com/oss/python/langgraph/workflows-agents>（存檔 `raw/E-langgraph-workflows-and-agents.md`）
