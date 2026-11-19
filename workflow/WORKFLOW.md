@@ -73,9 +73,9 @@
 
 ## N8N 流程（春川，照舊跑，不用改）
 
-- Webhook 接 CF 過濾後的任務 → 在 Slack 專用頻道開 thread，@Hark 查 Wiki → 沒有就 @cue 派工，等他貼回 thread（mail 備用） → @Instinct 驗證，過了才往下 → @Hark 生教案＋HTML 到暫存區 → @Instinct 終驗，過了通知完成。
+- Webhook 接 CF 過濾後的任務 → 在 Slack 專用頻道開 thread，@Hark 查 Wiki → 沒有就 @cue 派工（n8n 轉發信箱），等他貼回 thread；也可直接 mail → @Instinct 驗證，過了才往下 → @Hark 生教案＋HTML 到暫存區 → @Instinct 終驗，過了通知完成。
 - 每站設 timeout，超時沒回就發警報（首頁紅字＋Slack 推播），不要靜靜卡住。
-- @ 一次只 @ 一隻。Cue 用 Slack @cue（純文字，經 Manus 轉達）；mail 是備用，發了要貼進 thread 留紀錄。
+- @ 一次只 @ 一隻。Cue 用 Slack @cue（純文字，n8n 轉發信箱；回覆經 Manus 回 thread）；也可直接 mail，發了要貼進 thread 留紀錄。
 - n8n 有自己的 IP 跟網址，東京網站／CF Pages 只要打得到 webhook URL 就能用，不用同一台、同一區；webhook 要加驗證，不要裸奔；不要讓瀏覽器前端直接打，改由後端去打。
 
 ## Slack 流程
