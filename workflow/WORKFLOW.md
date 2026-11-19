@@ -3,6 +3,8 @@
 > 範例主題：固定自動流 → 單一 Agent → Multi-Agent，怎麼做選型。受眾：國小／國中／高中。
 > 作業步驟對照：取得資料 → 查詢 Wiki → 整理重點 → 檢查內容 → 產生簡報。
 
+> **W10 POC 跑法**：沒有首頁、沒有守門員、n8n 照舊。入口就是 #taica-w10-hw 手動開 Thread 派單。順序：1 Ingest（Cue，mail）→ 2 整理進 Wiki（Hark）→ 3a 查 Wiki（Hark）→ 3b 教案（Hark）→ 4 HTML 簡報（Hark）；Instinct 每站驗證。
+
 ## 入口（首頁，CF Pages）
 
 - 輸入主題、選受眾（國小／國中／高中）、按生成；底下顯示目前進度、已產生教案連結、取消按鍵。
@@ -69,7 +71,7 @@
 - 換主題＋受眾，其他流程不變，整條重跑一次就是證明。知識只存一次（Wiki），用法隨受眾換。
 - 第二個題目重跑時只改 `topics/topic.yaml`／來源清單，逐站記錄人工介入次數，分開驗收「跑通一次」跟「真的可換題複用」。
 
-## N8N 流程（春川，Nicky 重做）
+## N8N 流程（春川，照舊跑，不用改）
 
 - Webhook 接 CF 過濾後的任務 → 在 Slack 專用頻道開 thread，@Hark 查 Wiki → 沒有就發 mail 給 Cue，等回信貼回 thread → @Instinct 驗證，過了才往下 → @Hark 生教案＋HTML 到暫存區 → @Instinct 終驗，過了通知完成。
 - 每站設 timeout，超時沒回就發警報（首頁紅字＋Slack 推播），不要靜靜卡住。
@@ -78,6 +80,6 @@
 
 ## Slack 流程
 
-- 新開專用頻道，一個任務一個 thread；thread 裡只放當次交接：題目、受眾、job id、做到哪站、產出連結。
+- W10 在 #taica-w10-hw 派工，一個任務一個 thread（#universal-lesson-generator 是期末頻道）；thread 裡只放當次交接：題目、受眾、job id、做到哪站、產出連結。
 - skill 檔與流程定義本體在 repo，頻道只放連結跟討論——免費版 90 天就看不到了。
 - 進度抓法：首頁送出拿 job id，每 2–3 秒打 `/api/status/<job id>`，後端讀 `jobs/<id>.json`（現在做到哪站、進度％、最後更新時間）；每站做完由該站 agent 或 n8n 更新該檔案。
