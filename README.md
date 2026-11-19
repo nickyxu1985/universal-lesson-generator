@@ -25,7 +25,7 @@
 | Instinct | 專職驗證＋結構化進 Wiki（驗 ingest、驗最終 HTML） | 不生產教案、不做美工 |
 | Hark | 查 Wiki、驗來源＋Wiki、整理重點、產 HTML＋美工 | 不碰 ingest |
 | Cue | ingest 找資料、檢索（經 mail 來回，沒接 Slack） | 不進 Slack thread |
-| Muse | 這次不進產線（Slack @ 不穩定），只在主對話幫對齊 | 不接任何一站 |
+| Muse | W10 PM：任務協調＋專案 PM（不進產線；Slack @ 不穩定，在主對話對齊） | 不接任何一站（只做協調、追蹤、驗收） |
 | Nicky | n8n 照舊跑（不用改）；開 Slack 期末教案頻道；W10 派工在 #taica-w10-hw；驗收 | — |
 
 ## Repo 結構
