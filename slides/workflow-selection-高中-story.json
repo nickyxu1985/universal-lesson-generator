@@ -1,0 +1,101 @@
+{
+  "job_id": "w10-poc-001",
+  "title": "AI 幫我們辦園遊會：自動流程怎麼選",
+  "audience": "高中",
+  "style": "story",
+  "lesson_ref": "lessons/workflow-selection-高中-story.md",
+  "sources": [
+    {"id": "A", "title": "n8n — Agents vs chains", "url": "https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains"},
+    {"id": "B", "title": "Anthropic — Building effective agents（2024-12-19）", "url": "https://www.anthropic.com/research/building-effective-agents"},
+    {"id": "C", "title": "OpenAI — Orchestration and handoffs", "url": "https://developers.openai.com/api/docs/guides/agents/orchestration"},
+    {"id": "D", "title": "Yao et al. — ReAct（arXiv:2210.03629）", "url": "https://arxiv.org/abs/2210.03629"},
+    {"id": "E", "title": "LangGraph — Workflows and agents", "url": "https://docs.langchain.com/oss/python/langgraph/workflows-agents"}
+  ],
+  "slides": [
+    {"type": "cover", "lesson_section": 1,
+     "story": "班上要辦園遊會，班長說：「交給 AI 幫忙！」",
+     "title": "同樣叫 AI 幫忙，做法都一樣嗎？",
+     "points": ["有的工作每次做法都一樣", "有的工作要邊做邊想", "有的工作大到要分組"],
+     "question": "今天要回答：遇到什麼情況，選哪一種？",
+     "refs": ["B"]},
+    {"type": "terms", "lesson_section": 2,
+     "story": "先認識三種幫手",
+     "title": "三個名詞",
+     "terms": [
+       {"icon": "line", "name": "Workflow", "zh": "固定自動流", "plain": "照事先寫好的路線，一步一步做", "refs": ["B","E"]},
+       {"icon": "loop", "name": "Agent", "zh": "單一 Agent", "plain": "AI 自己決定怎麼做、用哪些工具", "refs": ["B","E"]},
+       {"icon": "branch", "name": "Multi-Agent", "zh": "多個 Agent 分工", "plain": "各有專長的 Agent 分工，要講清楚每一段最後由誰回答", "refs": ["C"]}
+     ],
+     "note": "Anthropic 把這些統稱為 agentic systems，但在架構上把 workflow 和 agent 分開來看。",
+     "refs": ["B","C","E"]},
+    {"type": "concept", "lesson_section": 3, "icon": "line",
+     "story": "收報名表 → 整理名單 → 寄通知，每次步驟都一樣",
+     "title": "固定自動流 Workflow",
+     "points": [
+       "路線事先決定好：結果可預測、做法一致，適合定義清楚的任務 [B][E]",
+       "常見做法：一步接一步、中間加檢查點（prompt chaining）；先分類再分流，像客服（routing） [B][E]",
+       "⚠️ n8n 的 chain 節點不能帶工具或記憶，那是產品自己的規定；一般固定流程裡，AI 也能用工具和記憶 [A][B][E]"
+     ],
+     "refs": ["A","B","E"]},
+    {"type": "concept", "lesson_section": 4, "icon": "loop",
+     "story": "「幫我想辦法讓攤位不撞名，又有人潮。」沒人能事先寫好要幾步",
+     "title": "單一 Agent：邊做邊想",
+     "points": [
+       "在迴圈裡用工具，每一步看環境回傳的結果，再決定下一步 [B][E]",
+       "卡住時可以停下來問人，也會設停止條件，例如最多試幾次 [B]",
+       "ReAct：「想一下（推理）→ 做一下（行動）」交替；推理訂計畫、改計畫，行動去外面查資料 [D]"
+     ],
+     "refs": ["B","D","E"]},
+    {"type": "concept", "lesson_section": 4, "icon": "loop",
+     "story": "邊做邊想很厲害，但不是免費的",
+     "title": "ReAct 的成績與 Agent 的代價",
+     "points": [
+       "在 ALFWorld 和 WebShop 兩個測驗上，ReAct 只看 1–2 個範例，成功率比模仿學習、強化學習方法分別高 34 和 10 個百分點 [D]",
+       "這是那兩個測驗的結果，不代表所有 Agent 都會進步這麼多 [D]",
+       "代價：比較花錢、比較慢，錯誤可能一路累積；要先在安全環境多測、加上護欄 [B]"
+     ],
+     "refs": ["B","D"]},
+    {"type": "concept", "lesson_section": 5, "icon": "branch",
+     "story": "總召 Agent 派工給場地組、宣傳組、財務組：分組是因為規則不同，不是人多好看",
+     "title": "Multi-Agent：規則不同才分組",
+     "points": [
+       "能用一個 Agent 就先用一個；下一段需要不同的指令、工具或規則時才拆 [C]",
+       "太早拆：要寫的提示、要追的紀錄、要核准的關卡都會變多 [C]",
+       "兩種分工：Handoffs（交棒，專家接手那段對話）；Agents as tools（總召保有控制、最後由總召回答） [C]"
+     ],
+     "refs": ["C"]},
+    {"type": "table", "lesson_section": 6,
+     "story": "園遊會的每件工作，都可以用這張表來選",
+     "title": "選型決策表",
+     "rows": [
+       {"situation": "問一次 AI＋查資料就夠", "choice": "先不用做 agentic system", "refs": ["B"]},
+       {"situation": "步驟固定、可以事先拆好", "choice": "固定自動流", "icon": "line", "refs": ["B","E"]},
+       {"situation": "子任務要看輸入才知道有哪些", "choice": "Orchestrator-workers（中央 AI 臨時拆工作派給別人）", "refs": ["B","E"]},
+       {"situation": "步驟數不能預測，要 AI 自己判斷", "choice": "單一 Agent", "icon": "loop", "refs": ["B","D","E"]},
+       {"situation": "不同部分需要不同的指令、工具或規則", "choice": "Multi-Agent", "icon": "branch", "refs": ["C"]}
+     ],
+     "takeaway": "先用最簡單的，真的需要時再加複雜度",
+     "refs": ["B","C","D","E"]},
+    {"type": "myths", "lesson_section": 7,
+     "story": "籌備會上有人這樣說，對嗎？",
+     "title": "常見誤解",
+     "myths": [
+       {"myth": "固定流程不能用工具或記憶", "fact": "錯。那只是 n8n chain 節點的限制", "refs": ["A","B","E"]},
+       {"myth": "Agent 越多越強", "fact": "不一定。太早拆反而增加提示、紀錄和核准關卡", "refs": ["C"]}
+     ],
+     "refs": ["A","B","C","E"]},
+    {"type": "quiz", "lesson_section": 8,
+     "story": "園遊會收攤了，來考考你（點題目看答案）",
+     "title": "小測驗",
+     "questions": [
+       {"q": "要照名單寄感謝信給每個攤位，步驟每次都一樣。選哪一種？", "a": "固定自動流：步驟固定，可以事先拆好", "refs": ["B","E"]},
+       {"q": "要 AI 找出「為什麼今年人潮變少」，不知道要查幾次資料。選哪一種？", "a": "單一 Agent：步驟數不能預測", "refs": ["B"]},
+       {"q": "小明說「分成 10 個 Agent 一定比 1 個強」。對嗎？", "a": "不一定：只有指令、工具或規則需要不同時才拆", "refs": ["C"]}
+     ],
+     "refs": ["B","C","E"]},
+    {"type": "sources", "lesson_section": 9,
+     "story": "今天每個說法都查得到出處",
+     "title": "來源",
+     "refs": []}
+  ]
+}
