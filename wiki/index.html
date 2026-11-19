@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM-Wiki｜自動流程選型（固定自動流 → 單一 Agent → Multi-Agent）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!--
+  Wiki 瀏覽頁母版（templates/wiki.html）
+  內容由 scripts/build_wiki.py 從 wiki/*.md 轉出後注入 <script id="wiki-data">，母版不放任何 Wiki 文字。
+  配色與字型沿用簡報母版 templates/slides.html。
+-->
+<style>
+  :root{
+    --bg:#FBF6EC; --ink:#1F2A44; --muted:#5B6478; --line:#E4DACA;
+    --accent:#E0662F; --accent-soft:#FDE8DC; --line-c:#2F7DD1; --branch-c:#2E9E6A;
+    --card:#FFFFFF; --side:#1F2A44;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:17px;line-height:1.75;display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh}
+  aside{background:var(--side);color:#E9ECF3;position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 18px;display:flex;flex-direction:column;gap:6px}
+  .brand{padding:0 10px 18px;border-bottom:1px solid #ffffff22;margin-bottom:12px}
+  .brand .k{font-size:13px;letter-spacing:2px;color:var(--accent);font-weight:700}
+  .brand .t{font-size:20px;font-weight:900;line-height:1.35;margin-top:4px}
+  .brand .s{font-size:13px;color:#AEB6C8;margin-top:6px;line-height:1.5}
+  nav a{display:flex;gap:10px;align-items:baseline;padding:10px 12px;border-radius:10px;color:#D5DAE5;text-decoration:none;font-size:15.5px;line-height:1.45}
+  nav a .n{font-weight:900;color:#8E98AE;font-size:14px;min-width:22px}
+  nav a:hover{background:#ffffff12;color:#fff}
+  nav a.on{background:var(--accent);color:#fff}
+  nav a.on .n{color:#fff}
+  .sep{height:1px;background:#ffffff22;margin:12px 6px}
+  .side-foot{margin-top:auto;font-size:12.5px;color:#8E98AE;padding:16px 10px 0;line-height:1.6}
+  .side-foot a{color:#AEB6C8}
+  main{padding:48px clamp(20px,5vw,72px) 80px;max-width:920px;width:100%}
+  .crumb{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+  .crumb a{color:var(--muted)}
+  article h1{font-size:34px;font-weight:900;line-height:1.3;margin-bottom:22px;padding-bottom:16px;border-bottom:3px solid var(--ink)}
+  article h2{font-size:23px;font-weight:900;margin:34px 0 12px;padding-left:12px;border-left:6px solid var(--accent)}
+  article h3{font-size:19px;font-weight:700;margin:24px 0 8px}
+  article p{margin:10px 0}
+  article ul,article ol{margin:8px 0 8px 1.4em}
+  article li{margin:6px 0}
+  article li ul{margin-top:4px}
+  article strong{font-weight:900}
+  article blockquote{background:var(--accent-soft);border-left:6px solid var(--accent);border-radius:0 12px 12px 0;padding:12px 18px;margin:0 0 18px;font-size:15.5px;color:#5a3a26}
+  article code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:#EFE6D6;border-radius:5px;padding:1px 6px}
+  article pre{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;overflow-x:auto;margin:12px 0}
+  article pre code{background:none;padding:0;font-size:14px;line-height:1.6}
+  article a{color:var(--line-c);word-break:break-all}
+  .tbl{overflow-x:auto;margin:14px 0;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:15.5px}
+  th{text-align:left;font-weight:700;color:var(--muted);padding:10px 14px;border-bottom:2px solid var(--ink);white-space:nowrap}
+  td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+  tr:last-child td{border-bottom:0}
+  a.tag{display:inline-block;font-size:12.5px;font-weight:700;line-height:1;padding:4px 6px;margin:0 1px;border-radius:6px;
+    background:var(--accent-soft);color:var(--accent);text-decoration:none;vertical-align:2px;word-break:normal;cursor:pointer}
+  a.tag:hover{background:var(--accent);color:#fff}
+  h2.srchead + ul, h2.srchead + ol{list-style:none;margin-left:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 18px}
+  h2.srchead + ul li{padding:8px 0;border-bottom:1px dashed var(--line);font-size:15.5px}
+  h2.srchead + ul li:last-child{border-bottom:0}
+  li.hit{background:#FFF3C4;border-radius:6px;transition:background .3s}
+  .pager{display:flex;justify-content:space-between;gap:14px;margin-top:48px;padding-top:22px;border-top:1px solid var(--line)}
+  .pager a{flex:1;max-width:48%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;text-decoration:none;color:var(--ink);font-weight:700;font-size:15px;line-height:1.45}
+  .pager a small{display:block;color:var(--muted);font-weight:500;font-size:12.5px}
+  .pager a.next{text-align:right;margin-left:auto}
+  .pager a:hover{border-color:var(--accent)}
+  .src-file{margin-top:20px;font-size:13px;color:var(--muted)}
+  .src-file a{color:var(--muted)}
+  #menu{display:none}
+  @media (max-width:820px){
+    body{display:block}
+    aside{position:sticky;top:0;height:auto;z-index:5;padding:12px 14px;gap:0}
+    .brand{padding:0;border:0;margin:0;display:flex;justify-content:space-between;align-items:center}
+    .brand .k,.brand .s{display:none}
+    .brand .t{font-size:16px;margin:0}
+    #menu{display:block;font:inherit;font-size:14px;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer}
+    aside nav,aside .sep,aside .side-foot{display:none}
+    aside.open nav{display:block;margin-top:10px}
+    aside.open .sep{display:block}
+    main{padding:24px 18px 60px}
+    article h1{font-size:26px}
+  }
+</style>
+</head>
+<body>
+<aside id="side">
+  <div class="brand">
+    <div>
+      <div class="k">LLM-WIKI</div>
+      <div class="t">自動流程選型</div>
+      <div class="s">固定自動流 → 單一 Agent → Multi-Agent<br>主張後的 [A]–[E] 可點，跳到該頁來源</div>
+    </div>
+    <button id="menu" aria-label="開啟目錄">目錄</button>
+  </div>
+  <nav id="nav"></nav>
+  <div class="side-foot">內容：<span id="foot-path"></span>（Instinct 驗收 PASS，Job w10-poc-001）<br>本頁只做呈現，不改 Wiki 內容。</div>
+</aside>
+<main>
+  <div class="crumb" id="crumb"></div>
+  <article id="doc"></article>
+  <div class="pager" id="pager"></div>
+</main>
+<script id="wiki-data" type="application/json">{"slug": "workflow-selection", "repo": "https://github.com/nickyxu1985/universal-lesson-generator/blob/develop/", "pages": [{"id": "00", "title": "00 總覽：自動流程選型（固定自動流 → 單一 Agent → Multi-Agent）", "file": "wiki/workflow-selection/00-總覽.md", "html": "<h1>00 總覽：自動流程選型（固定自動流 → 單一 Agent → Multi-Agent）<\/h1>\n<blockquote>Job：w10-poc-001｜Stage 2 Wiki 草稿｜擷取日期 2026-11-19 CST｜主張後的 <a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a>–<a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> 對應下方來源<\/blockquote>\n<h2>核心問題<\/h2>\n<p>同一件事可以用「固定流程」做，也可以交給「Agent」自己決定怎麼做，甚至拆給多個 Agent。這份 Wiki 回答：遇到什麼情況，選哪一種。<\/p>\n<h2>三個名詞<\/h2>\n<ul><li><strong>Workflow（固定自動流）<\/strong>：LLM 與工具照「預先寫好的程式路徑」執行。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><li><strong>Agent（單一 Agent）<\/strong>：LLM 自己決定流程與要用哪些工具，掌握完成任務的方式。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><li><strong>Multi-Agent<\/strong>：多個專責 Agent 分工；關鍵設計是「每個分支由誰負責最後回覆」。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><li>Anthropic 把上述都統稱為 agentic systems，但在架構上明確區分 workflow 與 agent。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><\/ul>\n<h2>一句話原則<\/h2>\n<p>先找最簡單的解法，只有在需要時才增加複雜度；有時根本不需要做 agentic system。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> 能用一個 Agent 就先用一個，只有分工真的帶來好處才拆。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/p>\n<h2 class=\"srchead\">來源<\/h2>\n<ul><li><a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a> n8n — Agents vs chains：<a href=\"https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains\" target=\"_blank\" rel=\"noopener\">https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> Anthropic — Building effective agents（2024-12-19）：<a href=\"https://www.anthropic.com/research/building-effective-agents\" target=\"_blank\" rel=\"noopener\">https://www.anthropic.com/research/building-effective-agents<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a> OpenAI — Orchestration and handoffs：<a href=\"https://developers.openai.com/api/docs/guides/agents/orchestration\" target=\"_blank\" rel=\"noopener\">https://developers.openai.com/api/docs/guides/agents/orchestration<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a> Yao et al. — ReAct（arXiv:2210.03629，v3 2023-03-10）：<a href=\"https://arxiv.org/abs/2210.03629\" target=\"_blank\" rel=\"noopener\">https://arxiv.org/abs/2210.03629<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> LangGraph — Workflows and agents：<a href=\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\" target=\"_blank\" rel=\"noopener\">https://docs.langchain.com/oss/python/langgraph/workflows-agents<\/a><\/li><\/ul>"}, {"id": "01", "title": "01 固定自動流（Workflow）", "file": "wiki/workflow-selection/01-固定自動流.md", "html": "<h1>01 固定自動流（Workflow）<\/h1>\n<h2>定義<\/h2>\n<ul><li>預先決定的程式路徑，照固定順序執行。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><li>優點：對定義清楚的任務，提供可預測性與一致性。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><\/ul>\n<h2>常見模式（<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> 與 <a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> 都列出同一組）<\/h2>\n<div class=\"tbl\"><table><thead><tr><th>模式<\/th><th>做法<\/th><th>適合時機<\/th><\/tr><\/thead><tbody><tr><td>Prompt chaining<\/td><td>每一步處理上一步輸出，可在中間加程式檢查（gate）<\/td><td>任務能乾淨拆成固定子任務；用延遲換準確度 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>Routing<\/td><td>先分類輸入，再導到專門流程<\/td><td>有明確類別且分類夠準，例如客服分流 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>Parallelization<\/td><td>子任務同時跑（sectioning）或同任務跑多次投票（voting）<\/td><td>要加速、或要多個觀點提高信心 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>Orchestrator-workers<\/td><td>中央 LLM 動態拆任務、派給 worker、再彙整<\/td><td>子任務無法事先預測，例如改多個檔案的程式任務 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>Evaluator-optimizer<\/td><td>一個產生、一個評估回饋，循環改進<\/td><td>有清楚評估標準、反覆修改有明確價值 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><\/tbody><\/table><\/div>\n<h2>以 n8n 為例（產品定義，只適用 n8n）<\/h2>\n<ul><li>在 n8n 中，<strong>chain<\/strong> 是「一串 LLM 呼叫，不帶工具也不帶記憶」；Basic LLM Chain 節點不支援記憶與工具。<a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a><\/li><li>⚠️ 這是 n8n 對自家 chain 節點的定義，<strong>不能推論成所有固定自動流程都不能用工具或記憶<\/strong>。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> 的 workflow 本身就允許 LLM 帶工具、檢索與記憶（augmented LLM），只是路徑是預先寫好的。<\/li><\/ul>\n<h2 class=\"srchead\">本頁來源<\/h2>\n<ul><li><a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a> n8n — Agents vs chains：<a href=\"https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains\" target=\"_blank\" rel=\"noopener\">https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> Anthropic — Building effective agents（2024-12-19）：<a href=\"https://www.anthropic.com/research/building-effective-agents\" target=\"_blank\" rel=\"noopener\">https://www.anthropic.com/research/building-effective-agents<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> LangGraph — Workflows and agents：<a href=\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\" target=\"_blank\" rel=\"noopener\">https://docs.langchain.com/oss/python/langgraph/workflows-agents<\/a><\/li><\/ul>"}, {"id": "02", "title": "02 單一 Agent", "file": "wiki/workflow-selection/02-單一-agent.md", "html": "<h1>02 單一 Agent<\/h1>\n<h2>定義與運作<\/h2>\n<ul><li>Agent 由 LLM 動態決定自己的流程與工具使用。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><li>實作上通常就是「LLM 根據環境回饋、在迴圈中使用工具」。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><li>每一步要從環境取得「ground truth」（例如工具結果、程式執行結果）來判斷進度；可在檢查點或卡住時停下來問人；常設停止條件（例如最大迭代次數）。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><li>n8n 的 Agent 節點會決定要呼叫哪些工具，並可使用記憶。<a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a><\/li><\/ul>\n<h2>理論根源：ReAct<\/h2>\n<ul><li>ReAct 讓 LLM 交錯產生「推理軌跡」與「行動」：推理幫助擬定、追蹤、更新計畫與處理例外；行動讓模型接觸外部來源（知識庫、環境）取得資訊。<a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a><\/li><li>在 HotpotQA 與 Fever 上，透過呼叫簡單的 Wikipedia API，減少思維鏈推理常見的幻覺與錯誤傳遞。<a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a><\/li><li>在 ALFWorld 與 WebShop 兩個互動決策 benchmark 上，ReAct 只用 1–2 個範例提示（one/two-shot），絕對成功率分別比模仿學習與強化學習方法高 34 與 10 個百分點。<a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a><ul><li>⚠️ 這是論文在這兩個特定 benchmark、對上述比較對象的結果，不能寫成「一般 Agent 都會提升 34／10 個百分點」。<\/li><\/ul><\/li><\/ul>\n<h2>適合時機<\/h2>\n<ul><li>開放式問題：很難或無法預測需要幾步，也無法寫死固定路徑。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><li>需要彈性與模型自行決策的規模化任務。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><\/ul>\n<h2>代價與風險<\/h2>\n<ul><li>成本較高，錯誤可能累積（compounding errors）；建議在沙盒大量測試並設護欄。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><li>agentic system 通常用延遲與成本換更好的任務表現。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><\/ul>\n<h2 class=\"srchead\">本頁來源<\/h2>\n<ul><li><a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a> n8n — Agents vs chains：<a href=\"https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains\" target=\"_blank\" rel=\"noopener\">https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> Anthropic — Building effective agents（2024-12-19）：<a href=\"https://www.anthropic.com/research/building-effective-agents\" target=\"_blank\" rel=\"noopener\">https://www.anthropic.com/research/building-effective-agents<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a> Yao et al. — ReAct: Synergizing Reasoning and Acting in Language Models（arXiv:2210.03629，v3 2023-03-10）：<a href=\"https://arxiv.org/abs/2210.03629\" target=\"_blank\" rel=\"noopener\">https://arxiv.org/abs/2210.03629<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> LangGraph — Workflows and agents：<a href=\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\" target=\"_blank\" rel=\"noopener\">https://docs.langchain.com/oss/python/langgraph/workflows-agents<\/a><\/li><\/ul>"}, {"id": "03", "title": "03 Multi-Agent", "file": "wiki/workflow-selection/03-multi-agent.md", "html": "<h1>03 Multi-Agent<\/h1>\n<h2>什麼時候拆<\/h2>\n<ul><li>專家各自負責工作的不同部分時，multi-agent 才有用。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><li>先用一個 Agent；只有在能明顯改善「能力隔離、政策隔離、提示清晰度、追蹤可讀性」時才加專家。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><li>太早拆會多出更多 prompt、更多 trace、更多核准點，不一定讓流程變好。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><li>只有下一個分支真的需要不同的指令、工具或政策時才拆。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><\/ul>\n<h2>兩種編排方式（OpenAI Agents SDK）<\/h2>\n<div class=\"tbl\"><table><thead><tr><th>方式<\/th><th>用在<\/th><th>發生什麼<\/th><\/tr><\/thead><tbody><tr><td>Handoffs<\/td><td>專家應該接手該分支的對話<\/td><td>控制權轉給專家 <a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/td><\/tr><tr><td>Agents as tools<\/td><td>管理者保持控制，把專家當有限功能呼叫<\/td><td>管理者保有最後回覆 <a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/td><\/tr><\/tbody><\/table><\/div>\n<ul><li>管理者式適合：管理者要整合最後答案、專家只做摘要或分類這類有限任務。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><\/ul>\n<h2>與 workflow 的關係<\/h2>\n<ul><li>Orchestrator-workers 由中央 LLM 動態拆解並派工，是最接近 multi-agent 分工的 workflow 模式。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/li><\/ul>\n<h2 class=\"srchead\">本頁來源<\/h2>\n<ul><li><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> Anthropic — Building effective agents（2024-12-19）：<a href=\"https://www.anthropic.com/research/building-effective-agents\" target=\"_blank\" rel=\"noopener\">https://www.anthropic.com/research/building-effective-agents<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a> OpenAI — Orchestration and handoffs：<a href=\"https://developers.openai.com/api/docs/guides/agents/orchestration\" target=\"_blank\" rel=\"noopener\">https://developers.openai.com/api/docs/guides/agents/orchestration<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> LangGraph — Workflows and agents：<a href=\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\" target=\"_blank\" rel=\"noopener\">https://docs.langchain.com/oss/python/langgraph/workflows-agents<\/a><\/li><\/ul>"}, {"id": "04", "title": "04 選型決策：遇到什麼問題，怎麼選", "file": "wiki/workflow-selection/04-選型決策.md", "html": "<h1>04 選型決策：遇到什麼問題，怎麼選<\/h1>\n<div class=\"tbl\"><table><thead><tr><th>遇到的情況<\/th><th>建議<\/th><th>依據<\/th><\/tr><\/thead><tbody><tr><td>單次 LLM 呼叫＋檢索＋範例就夠<\/td><td>先不做 agentic system<\/td><td><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/td><\/tr><tr><td>步驟固定、可事先拆好、要可預測<\/td><td>固定自動流（chaining／routing／parallelization）<\/td><td><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>子任務數量與內容要看輸入才知道<\/td><td>Orchestrator-workers<\/td><td><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>步驟數無法預測、路徑寫不死、需要模型自己判斷<\/td><td>單一 Agent（工具迴圈，ReAct 式）<\/td><td><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a><\/td><\/tr><tr><td>不同部分需要不同指令、工具或政策，且拆開能改善隔離或可讀性<\/td><td>Multi-Agent（handoffs 或 agents-as-tools）<\/td><td><a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/td><\/tr><\/tbody><\/table><\/div>\n<h2>選型三原則<\/h2>\n<ol><li>由簡入繁：只在「能證明結果變好」時加複雜度。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><li>Agent 是有代價的：較高成本、錯誤累積，需要護欄與停止條件。<a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><\/li><li>拆 Agent 要有理由：契約（指令／工具／政策）改變了才拆。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><\/ol>\n<h2>常見誤解（驗收提醒）<\/h2>\n<ul><li>「固定流程不能用工具或記憶」→ 錯。這只是 n8n chain 節點的產品限制 <a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a>；一般 workflow 的 LLM 可帶工具與記憶 <a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a>。<\/li><li>「Agent 越多越強」→ 不一定，太早拆反而增加 prompt、trace 與核准點。<a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a><\/li><\/ul>\n<h2 class=\"srchead\">本頁來源<\/h2>\n<ul><li><a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a> n8n — Agents vs chains：<a href=\"https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains\" target=\"_blank\" rel=\"noopener\">https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"B\">[B]<\/a> Anthropic — Building effective agents（2024-12-19）：<a href=\"https://www.anthropic.com/research/building-effective-agents\" target=\"_blank\" rel=\"noopener\">https://www.anthropic.com/research/building-effective-agents<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"C\">[C]<\/a> OpenAI — Orchestration and handoffs：<a href=\"https://developers.openai.com/api/docs/guides/agents/orchestration\" target=\"_blank\" rel=\"noopener\">https://developers.openai.com/api/docs/guides/agents/orchestration<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"D\">[D]<\/a> Yao et al. — ReAct: Synergizing Reasoning and Acting in Language Models（arXiv:2210.03629，v3 2023-03-10）：<a href=\"https://arxiv.org/abs/2210.03629\" target=\"_blank\" rel=\"noopener\">https://arxiv.org/abs/2210.03629<\/a><\/li><li><a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> LangGraph — Workflows and agents：<a href=\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\" target=\"_blank\" rel=\"noopener\">https://docs.langchain.com/oss/python/langgraph/workflows-agents<\/a><\/li><\/ul>"}, {"id": "about", "title": "關於這個 Wiki", "file": "wiki/README.md", "html": "<h1>LLM-Wiki — 知識庫（<code>wiki/<\/code>）<\/h1>\n<blockquote>這裡是 LLM-Wiki 的家：底層事實，按選型問題分章，不是按來源堆。Wiki 是單一事實來源，錯了後面全錯，所以不趕工。<\/blockquote>\n<h2>內容怎麼來<\/h2>\n<ol><li><strong>Ingest（Cue，@cue）<\/strong>：依 <code>topics/topic.yaml<\/code> 找 5 篇以上官方／技術文件，HTTP 200、內文非空、去重、官方優先。<\/li><li><strong>結構化進 Wiki（Hark）<\/strong>：把文件整理進本目錄的分章 Markdown，每個主張標來源。<\/li><li><strong>驗證（Instinct）<\/strong>：每個主張都有來源、沒有腦補、重點都有覆蓋、結構完整、來源之間沒有矛盾。不合格退回 ingest 補抓。<\/li><\/ol>\n<h2>佈局<\/h2>\n<pre><code>wiki/\n  README.md                 本檔\n  &lt;topic-slug&gt;/             一個主題一個資料夾\n    00-總覽.md\n    01-固定自動流.md\n    02-單一-agent.md\n    03-multi-agent.md\n    04-選型決策.md<\/code><\/pre>\n<ul><li>每個主張標來源（<code>來源：&lt;文件標題&gt;（URL）<\/code>）。<\/li><li>同一個 Wiki 可以生三種教案（國小／國中／高中），但每種都要單獨驗。<\/li><li>Wiki 越用越厚，同主題第二次不用再 ingest。<\/li><\/ul>\n<h2>目前狀態<\/h2>\n<ul><li><code>workflow-selection/<\/code>：範例主題（固定自動流 → 單一 Agent → Multi-Agent 選型）5 頁已建立，來源 <a class=\"tag\" href=\"#\" data-src=\"A\">[A]<\/a>–<a class=\"tag\" href=\"#\" data-src=\"E\">[E]<\/a> 為 Cue stage_1_ingest 五篇（Instinct PASS）；stage_2_wiki 內容經 Instinct 驗收 PASS（Job w10-poc-001）。每頁頁尾附「本頁來源」標題與 URL。<\/li><li>Google 官方來源仍從缺（<code>topics/topic.yaml<\/code> TODO），目前五篇已達門檻。<\/li><li>檔案命名與分章細節以 <code>agents/wiki.md<\/code> 為準。<\/li><\/ul>"}]}</script>
+<script>
+(function(){
+  const W = JSON.parse(document.getElementById('wiki-data').textContent);
+  const P = W.pages, wikiPages = P.filter(p => p.id !== 'about');
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const short = t => t.replace(/^\d\d\s*/, '').replace(/[（(].*$/, '').split('：')[0];
+  $('foot-path').textContent = 'wiki/' + W.slug + '/';
+
+  // 從各頁「來源」清單收集 [A]–[E] 標題，做 tag 的滑鼠提示
+  const SRC = {};
+  const tmp = document.createElement('div');
+  P.forEach(p => { tmp.innerHTML = p.html; tmp.querySelectorAll('h2.srchead + ul > li').forEach(li => {
+    const m = li.textContent.match(/^\[([A-E])\]\s*(.*?)：\s*https?:/); if (m && !SRC[m[1]]) SRC[m[1]] = m[2]; }); });
+
+  $('nav').innerHTML = wikiPages.map(p => `<a href="#${p.id}" data-id="${p.id}"><span class="n">${p.id}</span><span>${esc(short(p.title))}</span></a>`).join('')
+    + '<div class="sep"></div>' + P.filter(p => p.id === 'about').map(p => `<a href="#about" data-id="about"><span class="n">ⓘ</span><span>${esc(p.title)}</span></a>`).join('');
+
+  function show(id){
+    const i = P.findIndex(p => p.id === id); const p = P[i >= 0 ? i : 0];
+    const doc = $('doc'); doc.innerHTML = p.html;
+    if (p.id === 'about' && !doc.querySelector('h1')) doc.insertAdjacentHTML('afterbegin', `<h1>${esc(p.title)}</h1>`);
+    doc.querySelectorAll('h2.srchead + ul > li').forEach(li => { const m = li.textContent.match(/^\[([A-E])\]/); if (m) li.id = 'src-' + m[1]; });
+    doc.querySelectorAll('a.tag').forEach(a => { const k = a.dataset.src; if (SRC[k]) a.title = '[' + k + '] ' + SRC[k]; });
+    $('crumb').innerHTML = `LLM-Wiki ／ <a href="${W.repo}${p.file}" target="_blank" rel="noopener">${esc(p.file)}</a>`;
+    document.title = p.title + '｜LLM-Wiki';
+    const seq = wikiPages, k = seq.indexOf(p);
+    const prev = k > 0 ? seq[k-1] : null, next = k >= 0 && k < seq.length - 1 ? seq[k+1] : (k < 0 ? seq[0] : null);
+    $('pager').innerHTML = (prev ? `<a href="#${prev.id}"><small>← 上一頁</small>${esc(prev.title)}</a>` : '')
+      + (next ? `<a class="next" href="#${next.id}"><small>下一頁 →</small>${esc(next.title)}</a>` : '');
+    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.id === p.id));
+    $('side').classList.remove('open');
+    window.scrollTo(0, 0);
+  }
+  // tag 點擊：跳到本頁來源；本頁沒列就跳 00 總覽的來源清單
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a.tag'); if (!a) return; e.preventDefault();
+    let li = document.getElementById('src-' + a.dataset.src);
+    if (!li) { location.hash = '00'; setTimeout(() => flash(document.getElementById('src-' + a.dataset.src)), 30); return; }
+    flash(li);
+  });
+  function flash(li){ if (!li) return; li.scrollIntoView({block:'center'}); li.classList.add('hit'); setTimeout(() => li.classList.remove('hit'), 1600); }
+  $('menu').addEventListener('click', () => $('side').classList.toggle('open'));
+  const route = () => show((location.hash || '#00').slice(1));
+  addEventListener('hashchange', route); route();
+})();
+</script>
+</body>
+</html>
