@@ -28,5 +28,6 @@ wiki/
 ## 目前狀態
 
 - `workflow-selection/`：範例主題（固定自動流 → 單一 Agent → Multi-Agent 選型）5 頁已建立，來源 [A]–[E] 為 Cue stage_1_ingest 五篇（Instinct PASS）；stage_2_wiki 內容經 Instinct 驗收 PASS（Job w10-poc-001）。每頁頁尾附「本頁來源」標題與 URL。
+- **v2（Job w10-poc-004，Wiki 增量）**：5 頁加深，每頁正文（不含頁尾來源清單）≥ 2,000 個中文字，且都有「定義、運作方式、例子、適用情境與取捨、常見錯誤」五段；新增內容只用 [A]–[E]（原文存檔見 `raw/`），教學情境標「示意」、由來源推出的句子標「本 Wiki 推論」。v1 留在 git history 作反思材料。
 - Google 官方來源仍從缺（`topics/topic.yaml` TODO），目前五篇已達門檻。
 - 檔案命名與分章細節以 `agents/wiki.md` 為準。
