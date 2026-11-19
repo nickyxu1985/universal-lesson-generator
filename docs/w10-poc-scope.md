@@ -49,7 +49,7 @@
 3. Instinct 驗證＋結構化進 Wiki（與生產者不同人驗證）。
 4. Hark 查 Wiki、驗來源＋Wiki，整理重點＋生簡報結構 JSON，套母版成 HTML，貼 HANDOFF Block 到 Thread。
 5. Instinct 終驗，Thread 標記完成 ✅。
-6. n8n 若已重做好就照 SPEC 走；若還沒好，POC 允許 Nicky 手動開 Thread＋手動派單，**要求不變的是 Thread 裡要有完整 handoff 紀錄**（這是反思的證據）。
+6. n8n 照舊跑，不用改；POC 在 #taica-w10-hw 開 Thread 派單，**要求不變的是 Thread 裡要有完整 handoff 紀錄**（這是反思的證據）。
 
 ## 6. Loop / Graph（W10 繳交用，照 SPEC §2 簡化）
 
@@ -76,7 +76,7 @@
 
 - GitHub UI 建 repo（Muse 無法建倉；repo 名待定：SPEC 寫 `lesson-generator/`，先前另有 `universal-lesson-generator` 候選）。
 - 開 Slack 專屬教案頻道。
-- n8n 流程重做（POC 若來不及，可先手動派單，見 §5 第 6 點）。
+- n8n 照舊跑，不用改（見 §5 第 6 點）。
 - topic.yaml 的 6 個來源 URL 補齊（起手包裡目前是 TODO，填了之後每條要過 HTTP 200＋非空檢查）。
 
 ## 9. 另記：W11 是補救作業（與 W10 分開）
