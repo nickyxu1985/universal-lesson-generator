@@ -1,0 +1,26 @@
+# 第一範例主題（換題重跑時只改這檔＋來源清單）
+
+topic: "通用教案產生器 — 以自動流程選型為例"
+example: "固定自動流 → 單一 Agent → Multi-Agent，遇到什麼問題，怎麼選"
+audiences:
+  - 國小
+  - 國中
+  - 高中
+
+# 範例來源起點：Hermes #1 已實測 6 篇有正文。
+# URL 已由 Cue 於 2026-11-19 補齊，經 Instinct 驗收 stage_1_ingest PASS（Job 1 thread）。
+# 每篇都要過 HTTP 200＋內文非空檢查（見 agents/ingest.md）。
+sources:
+  - name: n8n 官方文件
+    url: https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains
+  - name: Anthropic 官方文件
+    url: https://www.anthropic.com/research/building-effective-agents
+  - name: OpenAI 官方文件
+    url: https://developers.openai.com/api/docs/guides/agents/orchestration
+  - name: ReAct 論文／官方說明
+    url: https://arxiv.org/abs/2210.03629
+  - name: LangGraph 官方文件
+    url: https://docs.langchain.com/oss/python/langgraph/workflows-agents
+  # Google 候選已排除：ADK 只回 HTTP 200 的 446 B Redirecting 頁，無文件正文（2026-11-19，Cue ingest）。
+  - name: Google 官方文件
+    url: TODO

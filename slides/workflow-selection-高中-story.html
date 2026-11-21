@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 幫我們辦園遊會：自動流程怎麼選（30 分鐘版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!--
+  簡報母版 v2（templates/slides.html，Job w10-poc-004）
+  Agent 只產出簡報結構 JSON；組裝時把 JSON 注入 <script id="deck-data">，不改母版。
+  風格參照（內建，並顯示在簡報最後一頁）：
+    - 圖示：Lucide Icons v1.76.0，ISC License — https://lucide.dev ／ https://github.com/lucide-icons/lucide
+      （下方 ICONS 內嵌的是 lucide-static 原始 SVG 路徑，未修改，只用 currentColor 換色）
+    - 配色：Okabe–Ito 色盲友善配色（Color Universal Design，Okabe & Ito 2008）— https://jfly.uni-koeln.de/color/
+      #0072B2 藍＝固定自動流｜#D55E00 朱＝單一 Agent｜#009E73 綠＝Multi-Agent｜#E69F00 橙＝強調／時間
+    - 字型：Noto Sans TC，SIL Open Font License 1.1 — https://fonts.google.com/noto/specimen/Noto+Sans+TC
+  版面規則：specs/style.md（v2 依 PM 釐清：每頁重點比 v1 多；內文 ≥ 22px、標題 ≥ 40px；每頁標段落與分鐘）
+-->
+<style>
+  :root{
+    --wf:#0072B2; --ag:#D55E00; --ma:#009E73; --acc:#E69F00; --sky:#56B4E9;
+    --bg:#FAF7F0; --ink:#1B2433; --muted:#566074; --line:#E3DCCD; --card:#FFFFFF;
+    --wf-l:#E3F0F8; --ag-l:#FBEADF; --ma-l:#DFF3EC; --acc-l:#FCF1D9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#222834;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  .slide{position:absolute;width:1280px;height:720px;background:var(--bg);border-radius:6px;overflow:hidden;
+    display:none;flex-direction:column;padding:0 64px;transform-origin:center center}
+  .slide.on{display:flex}
+  svg.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  /* 上方：段落時間軸＋本頁時間 */
+  .top{display:flex;align-items:center;gap:14px;height:62px;flex:none}
+  .tl{display:flex;gap:6px;flex:1}
+  .tl span{height:8px;border-radius:4px;background:#E6DFD0}
+  .tl span.done{background:#C9BFA9}
+  .tl span.cur{background:var(--acc)}
+  .badge{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:#7A4E00;background:var(--acc-l);
+    border:2px solid var(--acc);border-radius:999px;padding:4px 16px;white-space:nowrap}
+  .badge svg{font-size:22px;color:var(--acc)}
+  .story{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;font-size:21px;font-weight:500;color:#8A3B00;
+    background:var(--ag-l);border-radius:999px;padding:6px 20px;margin:4px 0 12px;max-width:100%}
+  .story svg{font-size:24px;color:var(--ag)}
+  h1{font-size:42px;font-weight:900;line-height:1.2;margin-bottom:16px}
+  .t-cover h1{font-size:58px;margin:10px 0 22px}
+  .body{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0}
+  .ref{font-size:16px;color:var(--muted);font-weight:500;white-space:nowrap;letter-spacing:.3px}
+  ul.pts{list-style:none;display:flex;flex-direction:column;gap:10px}
+  ul.pts li{font-size:24px;line-height:1.45;padding-left:28px;position:relative}
+  ul.pts li::before{content:"";position:absolute;left:4px;top:13px;width:11px;height:11px;border-radius:50%;background:var(--c,var(--acc))}
+  .row{display:flex;gap:22px;min-height:0}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+  .card .hd{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:900;color:var(--c)}
+  .card .hd svg{font-size:36px}
+  .card .tx{font-size:24px;line-height:1.45}
+  .wf{--c:var(--wf);--l:var(--wf-l)} .ag{--c:var(--ag);--l:var(--ag-l)} .ma{--c:var(--ma);--l:var(--ma-l)} .acc{--c:var(--acc);--l:var(--acc-l)}
+  .card.wf,.card.ag,.card.ma{border-top:6px solid var(--c)}
+  .note{font-size:20px;color:var(--muted);line-height:1.45}
+  .callout{font-size:22px;font-weight:700;line-height:1.45;padding:12px 20px;border-left:8px solid var(--acc);background:#fff;border-radius:0 10px 10px 0}
+  /* cover */
+  .cover-wrap{display:flex;gap:40px;flex:1}
+  .cover-wrap ul.pts li{font-size:25px}
+  .cover-icons{display:flex;flex-direction:column;justify-content:center;gap:18px;width:250px}
+  .cover-icons div{display:flex;align-items:center;gap:14px;font-size:22px;font-weight:700;color:var(--c)}
+  .cover-icons svg{font-size:56px}
+  /* agenda */
+  .agenda{display:flex;flex-direction:column;gap:5px}
+  .ag-row{display:grid;grid-template-columns:44px 1fr 200px 100px;align-items:center;gap:14px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:3px 16px}
+  .ag-row svg{font-size:32px;color:var(--c)}
+  .ag-row .nm{font-size:23px;font-weight:700}
+  .ag-row .rg{font-size:18px;color:var(--muted);white-space:nowrap}
+  .ag-row .mn{font-size:22px;font-weight:900;color:#7A4E00;text-align:right}
+  .bar{height:8px;border-radius:4px;background:var(--c);margin-top:3px}
+  /* table */
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:23px;background:#fff;border-radius:12px;overflow:hidden;border:2px solid var(--line)}
+  th{font-size:19px;text-align:left;color:#fff;background:var(--ink);font-weight:700;padding:9px 14px}
+  td{padding:12px 16px;border-top:1px solid var(--line);vertical-align:top;line-height:1.4}
+  tr.wf td:first-child,tr.ag td:first-child,tr.ma td:first-child{border-left:8px solid var(--c);font-weight:700;color:var(--c)}
+  td:first-child{font-weight:700}
+  /* patterns */
+  .pat{display:grid;gap:16px;flex:1;min-height:0}
+  .pcard{background:#fff;border:2px solid var(--line);border-top:6px solid var(--wf);border-radius:14px;padding:12px 18px;display:flex;flex-direction:column;gap:7px}
+  .pcard .hd{display:flex;align-items:center;gap:10px;font-size:23px;font-weight:900;color:var(--wf)}
+  .pcard .hd svg{font-size:32px} .pcard .hd em{margin-left:auto;font-style:normal;font-size:17px;color:#7A4E00;background:var(--acc-l);border-radius:999px;padding:2px 10px}
+  .pcard .how{font-size:22px;line-height:1.42}
+  .pcard .ex{font-size:19px;line-height:1.42;color:#244}
+  .pcard .fair{font-size:19px;line-height:1.4;color:#8A3B00;background:var(--ag-l);border-radius:8px;padding:4px 10px}
+  .warns{display:flex;flex-direction:column;gap:6px}
+  .warns div{font-size:19px;line-height:1.4;background:#fff;border-left:6px solid var(--acc);padding:6px 14px;border-radius:0 8px 8px 0}
+  /* steps */
+  .steps{display:flex;gap:30px;flex:1;min-height:0}
+  ol.st{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px;flex:1}
+  ol.st li{counter-increment:s;font-size:23px;line-height:1.45;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 16px 10px 64px;position:relative}
+  ol.st li::before{content:counter(s);position:absolute;left:14px;top:9px;width:36px;height:36px;border-radius:50%;background:var(--c);color:#fff;font-weight:900;font-size:21px;display:flex;align-items:center;justify-content:center}
+  .diagram{width:330px;flex:none;display:flex;align-items:center;justify-content:center}
+  .diagram svg{width:320px;height:auto}
+  /* split */
+  .split{display:flex;gap:22px;flex:1;min-height:0}
+  .split .card ul.pts li{font-size:23px}
+  .split .card ul.pts{gap:14px}
+  /* myths */
+  .myths{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .myth{background:#fff;border:2px solid var(--line);border-radius:14px;padding:22px 24px;cursor:pointer;min-height:150px}
+  .myth .m{display:flex;gap:10px;align-items:center;font-size:26px;font-weight:700;flex-wrap:wrap}
+  .myth .m svg{font-size:28px;color:var(--ag)}
+  .myth .f{display:flex;gap:10px;align-items:flex-start;font-size:24px;line-height:1.4;margin-top:8px;color:#06523C;visibility:hidden}
+  .myth .f svg{font-size:26px;color:var(--ma)}
+  .myth.open .f{visibility:visible}
+  .hint{font-size:16px;color:var(--muted);font-weight:500}
+  .myth.open .hint,.quiz li.open .hint{display:none}
+  /* quiz */
+  ol.quiz{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .quiz li{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 22px;cursor:pointer}
+  .quiz .q{font-size:24px;font-weight:700;line-height:1.42}
+  .quiz .a{font-size:23px;margin-top:6px;color:#06523C;font-weight:700;visibility:hidden}
+  .quiz li.open .a{visibility:visible}
+  /* sources */
+  .srcgrid{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;flex:1;min-height:0}
+  .srcs{list-style:none;display:flex;flex-direction:column;gap:9px}
+  .srcs li{font-size:20px;line-height:1.35}
+  .srcs b{color:var(--ag);margin-right:6px}
+  .srcs a{display:block;color:var(--muted);font-size:15px;word-break:break-all}
+  footer{display:flex;justify-content:space-between;align-items:center;height:46px;margin:12px -64px 0;padding:0 64px;
+    font-size:16px;color:var(--muted);border-top:1px solid var(--line);flex:none}
+  #nav{position:fixed;top:10px;right:14px;opacity:.6;display:flex;gap:8px;z-index:9}
+  #nav button{font:inherit;font-size:16px;padding:6px 14px;border-radius:8px;border:0;background:#ffffffcc;cursor:pointer}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--acc);z-index:9;transition:width .2s}
+  @media print{#nav,#bar{display:none}}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage"></div>
+<div id="nav"><button id="prev" aria-label="上一頁">◀</button><button id="next" aria-label="下一頁">▶</button></div>
+<script id="deck-data" type="application/json">{"job_id": "w10-poc-004", "version": "v2", "title": "AI 幫我們辦園遊會：自動流程怎麼選（30 分鐘版）", "duration_min": 30, "audience": "高中", "style": "story", "lesson_ref": "lessons/workflow-selection-高中-story.md", "wiki_ref": "wiki/workflow-selection/", "sources": [{"id": "A", "title": "n8n — Agents vs chains", "url": "https://docs.n8n.io/build/integrate-ai/understand-ai-components/agents-vs-chains"}, {"id": "B", "title": "Anthropic — Building effective agents（2024-12-19）", "url": "https://www.anthropic.com/research/building-effective-agents"}, {"id": "C", "title": "OpenAI — Orchestration and handoffs", "url": "https://developers.openai.com/api/docs/guides/agents/orchestration"}, {"id": "D", "title": "Yao et al. — ReAct（arXiv:2210.03629，v3 2023-03-10）", "url": "https://arxiv.org/abs/2210.03629"}, {"id": "E", "title": "LangGraph — Workflows and agents", "url": "https://docs.langchain.com/oss/python/langgraph/workflows-agents"}], "style_refs": [{"what": "圖示", "name": "Lucide Icons v1.76.0（ISC License）", "url": "https://lucide.dev", "repo": "https://github.com/lucide-icons/lucide", "note": "內嵌 SVG，未改路徑，只改顏色"}, {"what": "配色", "name": "Okabe–Ito 色盲友善配色（Color Universal Design, Okabe & Ito 2008）", "url": "https://jfly.uni-koeln.de/color/", "note": "藍 #0072B2＝固定自動流、朱 #D55E00＝單一 Agent、綠 #009E73＝Multi-Agent、橙 #E69F00＝強調"}, {"what": "字型", "name": "Noto Sans TC（SIL Open Font License 1.1）", "url": "https://fonts.google.com/noto/specimen/Noto+Sans+TC", "note": "Google Fonts 載入"}], "slides": [{"type": "cover", "sec": 1, "t0": "00:00", "t1": "01:30", "min": "1.5", "story": "班上要辦園遊會，班長說：「全部交給 AI！」", "title": "同樣叫 AI 幫忙，做法都一樣嗎？", "points": ["收報名表：每次做法都一樣 → 固定流程？", "讓攤位不撞名又有人潮：要邊做邊想 → 交給 Agent？", "場地、宣傳、財務規則各不同 → 要分組嗎？", "今天要回答：遇到什麼情況選哪一種，選錯要付什麼代價 [B]"], "question": "一句話原則：先找最簡單的解法，需要時才加複雜度；有時根本不需要 agentic system [B]", "refs": ["B"]}, {"type": "agenda", "sec": 1, "t0": "01:30", "t1": "02:00", "min": "0.5", "story": "今天的 30 分鐘怎麼走", "title": "課程地圖：7 段、30 分鐘", "items": [{"icon": "tent", "name": "開場故事", "min": 2, "range": "0–2", "wiki": "00"}, {"icon": "layers", "name": "三個名詞＋複雜度階梯", "min": 4, "range": "2–6", "wiki": "00"}, {"icon": "workflow", "name": "固定自動流：五種模式", "min": 6, "range": "6–12", "wiki": "01"}, {"icon": "repeat", "name": "單一 Agent：迴圈與 ReAct", "min": 6, "range": "12–18", "wiki": "02"}, {"icon": "network", "name": "Multi-Agent：兩種分工", "min": 5, "range": "18–23", "wiki": "03"}, {"icon": "list-ordered", "name": "選型決策：往上問五題", "min": 4, "range": "23–27", "wiki": "04"}, {"icon": "circle-help", "name": "誤解快問快答＋小測驗", "min": 3, "range": "27–30", "wiki": "00–04"}], "note": "每一頁右上角都標「第幾段｜這頁幾分鐘」，老師照著走就不會超時。", "refs": []}, {"type": "cards", "sec": 2, "t0": "02:00", "t1": "04:30", "min": "2.5", "cols": 3, "story": "先認識三種幫手，再看它們共用的地基", "title": "三個名詞＋共同地基", "cards": [{"icon": "workflow", "c": "wf", "title": "Workflow 固定自動流", "text": "照事先寫好的程式路線一步步做 [B][E]"}, {"icon": "repeat", "c": "ag", "title": "Agent 單一 Agent", "text": "AI 自己決定流程和要用哪些工具 [B][E]"}, {"icon": "network", "c": "ma", "title": "Multi-Agent 多 Agent 分工", "text": "不同專長各管一塊；先想清楚「每段最後由誰回答」 [C]"}], "extra": ["Anthropic 把它們統稱 agentic systems，但架構上把 workflow 和 agent 分開 [B]", "共同地基 augmented LLM：AI 外面加上查資料、工具、記憶；AI 會自己產生搜尋詞、挑工具、決定記什麼 [B][E]", "所以「固定流程」裡的 AI 一樣可以用工具和記憶（第 7 段會考） [B][E]"], "refs": ["B", "C", "E"]}, {"type": "table", "sec": 2, "t0": "04:30", "t1": "06:00", "min": "1.5", "story": "把四種做法排成一座樓梯", "title": "複雜度階梯：越往上越彈性、也越貴", "head": ["層", "誰決定下一步", "例子"], "rows": [["0 單次呼叫", "不用決定", "問一次 AI＋查資料＋給範例，很多應用這樣就夠 [B]"], ["1 固定自動流", "程式（事先寫好）", "五種模式，下一段介紹 [B][E]"], ["2 單一 Agent", "AI 邊做邊決定", "在迴圈裡用工具 [B][E]"], ["3 Multi-Agent", "各分支的專家／總召", "交棒，或把專家當工具叫 [C]"]], "rowc": ["", "wf", "ag", "ma"], "takeaway": "往上爬只改兩件事：路徑由誰決定、最後回覆由誰負責；代價是常用延遲和成本換表現 [B][C][E]", "refs": ["B", "C", "E"]}, {"type": "patterns", "sec": 3, "t0": "06:00", "t1": "08:30", "min": "2.5", "story": "每天：整理報名表 → 檢查有沒有漏填 → 寄通知，步驟固定", "title": "固定自動流①：一步接一步、先分類再分流", "lead": "核心：路線事先寫好，換來可預測、做法一致，適合定義清楚的任務 [B][E]（故事＋核心 30 秒）", "items": [{"icon": "list-checks", "name": "Prompt chaining 一步接一步", "min": "1 分", "how": "每步處理上一步的結果，中間可加檢查點（gate）；用時間換準確 [B][E]", "ex": "來源例：先寫行銷文案再翻譯；先寫大綱、檢查後再寫全文 [B]", "fair": "園遊會（示意）：整理名單 → 檢查漏填 → 寄信"}, {"icon": "route", "name": "Routing 先分類再分流", "min": "1 分", "how": "先分類，再交給專門流程；前提是分類做得準 [B][E]", "ex": "來源例：客服分一般／退款／技術支援；簡單題給小模型、難題給大模型 [B]", "fair": "園遊會（示意）：提問分「場地／繳費／其他」"}], "refs": ["B", "E"]}, {"type": "patterns", "sec": 3, "t0": "08:30", "t1": "12:00", "min": "3.5", "story": "同一段：再看三種進階模式", "title": "固定自動流②：同時做、指揮者派工、評分再改", "lead": "", "items": [{"icon": "split", "name": "Parallelization 同時做", "min": "1 分", "how": "Sectioning 拆小題同時做（加速）；Voting 同題做多次（提高信心） [B][E]", "ex": "來源例：一個模型回答、另一個同時篩不當內容；多個 prompt 一起找漏洞 [B]", "fair": "園遊會（示意）：海報文案三版同時產生再挑"}, {"icon": "user-cog", "name": "Orchestrator-workers 指揮者派工", "min": "1 分", "how": "中央 AI 看輸入臨時拆工作、派給 worker、再彙整 [B][E]", "ex": "來源例：每次要改很多檔案的程式產品；多來源蒐集資料 [B]", "fair": "園遊會（示意）：依今年攤位數臨時分配檢查工作"}, {"icon": "gauge", "name": "Evaluator-optimizer 評分再改", "min": "1 分", "how": "一個產生、一個評分給回饋，改到可接受為止 [B][E]", "ex": "來源例：文學翻譯由評估者挑細節 [B]", "fair": "園遊會（示意）：宣傳稿由「評審」挑錯再改"}], "warn": ["兩則提醒（共 30 秒）① orchestrator-workers ≠ 平行化——平行化的子任務事先定好，前者看輸入才決定 [B][E]", "② ⚠️ n8n 的 Basic LLM Chain 不支援記憶和工具，是產品定義 [A]；一般 workflow 的 AI 可以帶工具與記憶 [B][E]"], "refs": ["A", "B", "E"]}, {"type": "steps", "sec": 4, "t0": "12:00", "t1": "14:00", "min": "2", "diagram": "loop", "story": "「讓攤位不撞名又有人潮」：查名單 → 發現兩攤都叫珍奶站 → 想辦法 → 查場地圖……（示意）", "title": "單一 Agent①：一次任務怎麼跑", "steps": ["從指令或討論開始；任務清楚後自己規劃、自己做，需要時回頭問人 [B]", "每一步都從環境拿「真實結果」（工具查到的資料、程式結果）判斷進度 [B]", "在檢查點或卡住時停下來問人；通常設停止條件，例如最多跑幾輪 [B]", "畫成圖只有兩個點：AI →（要用工具嗎？）→ 工具 → 回到 AI；不用工具就結束 [E]"], "refs": ["B", "E"]}, {"type": "split", "sec": 4, "t0": "14:00", "t1": "16:30", "min": "2.5", "story": "Agent 怎麼「想」、又靠什麼「做」", "title": "單一 Agent②：ReAct 與工具", "cols": [{"icon": "brain", "c": "ag", "h": "ReAct：想一下、做一下（1.5 分）", "pts": ["交錯產生「推理」和「行動」：推理訂計畫、追進度、改計畫、處理例外；行動去外面查資料 [D]", "問答、事實查核測驗上，透過查 Wikipedia 減少瞎掰與錯誤傳遞，過程也較看得懂 [D]", "ALFWorld、WebShop 兩個測驗：只給 1–2 個範例，成功率比模仿學習、強化學習方法分別高 34、10 個百分點——不代表所有 Agent 都進步這麼多 [D]"]}, {"icon": "wrench", "c": "wf", "h": "工具是 Agent 的介面（1 分）", "pts": ["工具說明要像給新同學的說明書：範例、邊界情況、輸入格式，參數設計成不易用錯（防呆） [B]", "真實例子：做程式 Agent 時，改工具花的時間比改提示還多 [B]", "離開根目錄後用相對路徑會出錯，改成一律要求絕對路徑就好了 [B]"]}], "refs": ["B", "D"]}, {"type": "split", "sec": 4, "t0": "16:30", "t1": "18:00", "min": "1.5", "story": "Agent 很強，但不是免費的", "title": "單一 Agent③：什麼時候用、付什麼代價", "cols": [{"icon": "circle-check", "c": "ma", "h": "適合", "pts": ["開放式問題：很難預測要幾步、路線寫不死，而且對 AI 的判斷有一定信任 [B][E]", "要對話也要行動、有清楚成功標準、能形成回饋迴圈、有人看著 [B]", "例：客服；程式 Agent（能用自動測試檢查，但人工審查仍重要） [B]"]}, {"icon": "triangle-alert", "c": "ag", "h": "代價與護欄", "pts": ["比較貴、錯誤可能一路累積 [B]", "先在安全的沙盒環境多測，再加上護欄 [B]", "停止條件＋人工檢查點，保住控制權 [B]"]}], "refs": ["B", "E"]}, {"type": "table", "sec": 5, "t0": "18:00", "t1": "20:00", "min": "2", "story": "總召 Agent 派工給場地組、宣傳組、財務組（示意）", "title": "Multi-Agent①：兩種分工方式", "head": ["方式", "什麼時候用", "發生什麼事", "園遊會（示意）"], "rows": [["Handoffs 交棒", "專家應該接手下一個回覆", "控制權交給專家 [C]", "問「攤位在哪？」→ 交給場地組直接回答"], ["Agents as tools 當工具叫", "總召自己整合最後答案，專家只做摘要、分類這類小事", "總召保有回覆 [C]", "總召寫導師報告，只請財務組算數字"]], "rowc": ["ma", "wf"], "extra": ["來源例：分流 Agent 把對話交給帳務或退款專家（交棒）；研究助理呼叫摘要 Agent（當工具） [C]", "交棒要清楚：每個專家只做一件窄的事，交棒說明短而具體 [C]"], "refs": ["C"]}, {"type": "split", "sec": 5, "t0": "20:00", "t1": "23:00", "min": "3", "story": "分組要有理由，不是人多比較好看", "title": "Multi-Agent②：什麼時候才拆", "cols": [{"icon": "scale", "c": "ma", "h": "拆的條件（2 分）", "pts": ["能用一個 Agent 就先用一個 [C]", "拆開要明顯改善至少一項：能力隔離、規則隔離、提示更清楚、紀錄更好追 [C]", "只有下一段真的需要不同指令、工具或規則才拆；太早拆，提示、紀錄、核准關卡都變多 [C]", "分工的想法 workflow 早就有：分流、一個回答一個把關；每個考量各自專心做通常更好 [B]"]}, {"icon": "user-cog", "c": "wf", "h": "和 workflow 的關係（1 分）", "pts": ["Orchestrator-workers 是 workflow 裡最接近分工的模式 [B][E]", "中央 AI 看輸入拆工作、派給 worker，各自寫進共用的地方，再合成結果 [B][E]", "例：規劃器列出報告章節，每個 worker 寫一節，最後合成完整報告 [E]"]}], "refs": ["B", "C", "E"]}, {"type": "steps", "sec": 6, "t0": "23:00", "t1": "25:00", "min": "2", "diagram": "ladder", "story": "同一件事，由下往上問，答「夠了」就停", "title": "選型決策①：往上問五題", "steps": ["問一次 AI＋查資料＋範例夠不夠？夠 → 停 [B]", "能不能事先拆成固定步驟？能 → 選對應的固定模式 [B][E]", "子任務要看輸入才知道？→ Orchestrator-workers [B][E]", "連要幾步都無法預測？→ 單一 Agent，配停止條件和護欄 [B][D][E]", "各部分規則不同、一個 Agent 不夠清楚？→ Multi-Agent，再選交棒或當工具 [C]"], "note": "每往上一步都問：多出的時間、成本、提示和關卡值不值得？模式也可以組合，例如主流程分流、某個分支交給 Agent [B][C]", "refs": ["B", "C", "D", "E"]}, {"type": "table", "sec": 6, "t0": "25:00", "t1": "27:00", "min": "2", "story": "選太簡單、選太複雜，都會出狀況", "title": "選型決策②：選錯了會怎樣＋出手前檢查", "head": ["選得太簡單（該拆沒拆）", "選得太複雜（不該拆卻拆）"], "rows": [["不同類輸入擠一起，顧到一類就傷到另一類 [B]", "寫得死的任務用 Agent：更貴、錯誤會累積 [B]"], ["同一次呼叫又要回答又要把關，效果較差 [B]", "太早拆：提示、紀錄、關卡變多 [C]"], ["多個考量擠一次呼叫，不如分開專心做 [B]", "為套框架加抽象層，底層看不到、難除錯 [B]"]], "rowc": ["", "", ""], "takeaway": "檢查清單（30 秒）：說得出每一步嗎？[B][E] 能驗證每步結果嗎？[B] 設了停止條件和人工檢查點嗎？[B] 要拆的話，各專家哪裡不同？[C]", "refs": ["B", "C", "E"]}, {"type": "myths", "sec": 7, "t0": "27:00", "t1": "28:00", "min": "1", "story": "快問快答：對還是錯？舉手！", "title": "四個常見誤解", "myths": [{"myth": "固定流程不能用工具或記憶", "fact": "錯：那是 n8n chain 節點的產品限制", "refs": ["A", "B", "E"]}, {"myth": "Agent 越多越強", "fact": "錯：太早拆反而多出提示、紀錄和關卡", "refs": ["C"]}, {"myth": "Agent 比較先進，一律用 Agent", "fact": "錯：很多應用連 agentic system 都不需要", "refs": ["B"]}, {"myth": "ReAct 讓所有 Agent 成功率多 34％", "fact": "錯：那是兩個特定測驗、對特定方法的結果", "refs": ["D"]}], "refs": ["A", "B", "C", "D", "E"]}, {"type": "quiz", "sec": 7, "t0": "28:00", "t1": "30:00", "min": "2", "story": "園遊會結束了，來考考你（小測驗 1.5 分＋收尾 30 秒）", "title": "小測驗：你會怎麼選？", "questions": [{"q": "結束後照名單寄感謝信給每個攤位，步驟每次都一樣。選哪一種？", "a": "固定自動流（prompt chaining）：步驟固定、可事先拆好", "refs": ["B", "E"]}, {"q": "要 AI 找出「為什麼今年人潮變少」，不知道要查幾次。選哪一種？要加什麼保護？", "a": "單一 Agent；設停止條件（最多查幾輪），並在檢查點讓人看", "refs": ["B"]}, {"q": "總召寫導師報告，只想請財務組算好數字、自己整合。交棒還是當工具？", "a": "Agents as tools：總召保有最後回覆，專家只做有範圍的工作", "refs": ["C"]}], "takeaway": "帶走一句話：先用最簡單的，能證明變好才加複雜度 [B]", "refs": ["B", "C", "E"]}, {"type": "sources", "sec": 0, "t0": "", "t1": "", "min": "課後", "story": "課後附錄：內容與風格都有出處", "title": "來源與風格參照", "refs": []}]}</script>
+<script>
+(function(){
+  const deck = JSON.parse(document.getElementById('deck-data').textContent);
+  // Lucide Icons v1.76.0（ISC License, https://lucide.dev）原始 SVG 內容
+  const LUCIDE = {"book-open": "<path d=\"M12 5v16\" /> <path d=\"M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z\" />", "brain": "<path d=\"M12 18V5\" /> <path d=\"M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4\" /> <path d=\"M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294\" /> <path d=\"M17.996 5.125a4 4 0 012.526 5.77\" /> <path d=\"M18 18a4 4 0 002-7.465\" /> <path d=\"M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517\" /> <path d=\"M6 18a4 4 0 01-2-7.465\" /> <path d=\"M6.004 5.125a4 4 0 00-2.526 5.77\" />", "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "circle-help": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M9 9.5a3 2.5 0 016 0c0 2-2 2-3 3.5\" /> <path d=\"M12 17h.01\" />", "circle-x": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m15 9-6 6\" /> <path d=\"m9 9 6 6\" />", "file-text": "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M10 9H8\" /> <path d=\"M16 13H8\" /> <path d=\"M16 17H8\" />", "gauge": "<path d=\"m12 14 4-4\" /> <path d=\"M3.34 19a10 10 0 1 1 17.32 0\" />", "layers": "<path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\" /> <path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\" /> <path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\" />", "list-checks": "<path d=\"M13 5h8\" /> <path d=\"M13 12h8\" /> <path d=\"M13 19h8\" /> <path d=\"m3 17 2 2 4-4\" /> <path d=\"m3 7 2 2 4-4\" />", "list-ordered": "<path d=\"M11 5h10\" /> <path d=\"M11 12h10\" /> <path d=\"M11 19h10\" /> <path d=\"M4 4h1v5\" /> <path d=\"M4 9h2\" /> <path d=\"M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02\" />", "network": "<rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\" /> <rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\" /> <rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\" /> <path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\" /> <path d=\"M12 12V8\" />", "repeat": "<path d=\"m17 2 4 4-4 4\" /> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\" /> <path d=\"m7 22-4-4 4-4\" /> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\" />", "route": "<path d=\"M9 5h8.5a1 1 0 010 7h-11a1 1 0 000 7H15\" /> <circle cx=\"18\" cy=\"19\" r=\"3\" /> <circle cx=\"6\" cy=\"5\" r=\"3\" />", "scale": "<path d=\"M12 3v18\" /> <path d=\"m19 8 3 8a5 5 0 0 1-6 0zV7\" /> <path d=\"M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1\" /> <path d=\"m5 8 3 8a5 5 0 0 1-6 0zV7\" /> <path d=\"M7 21h10\" />", "sparkles": "<path d=\"M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z\" /> <path d=\"M20 2v4\" /> <path d=\"M22 4h-4\" /> <circle cx=\"4\" cy=\"20\" r=\"2\" />", "split": "<path d=\"M16 3h5v5\" /> <path d=\"M8 3H3v5\" /> <path d=\"M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3\" /> <path d=\"m15 9 6-6\" />", "tent": "<path d=\"M3.5 21 14 3\" /> <path d=\"M20.5 21 10 3\" /> <path d=\"M15.5 21 12 15l-3.5 6\" /> <path d=\"M2 21h20\" />", "timer": "<line x1=\"10\" x2=\"14\" y1=\"2\" y2=\"2\" /> <line x1=\"12\" x2=\"15\" y1=\"14\" y2=\"11\" /> <circle cx=\"12\" cy=\"14\" r=\"8\" />", "triangle-alert": "<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />", "user-cog": "<path d=\"M10 15H6a4 4 0 0 0-4 4v2\" /> <path d=\"m14.305 16.53.923-.382\" /> <path d=\"m15.228 13.852-.923-.383\" /> <path d=\"m16.852 12.228-.383-.923\" /> <path d=\"m16.852 17.772-.383.924\" /> <path d=\"m19.148 12.228.383-.923\" /> <path d=\"m19.53 18.696-.382-.924\" /> <path d=\"m20.772 13.852.924-.383\" /> <path d=\"m20.772 16.148.924.383\" /> <circle cx=\"18\" cy=\"15\" r=\"3\" /> <circle cx=\"9\" cy=\"7\" r=\"4\" />", "workflow": "<rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\" /> <path d=\"M7 11v4a2 2 0 0 0 2 2h4\" /> <rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\" />", "wrench": "<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z\" />"};
+  const ic = (n, cls) => LUCIDE[n] ? `<svg class="i ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${LUCIDE[n]}</svg>` : '';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const pt = s => esc(s).replace(/\s*((?:\[[A-E]\])+)/g, ' <span class="ref">$1</span>');
+  const refTxt = r => (r && r.length) ? r.map(x => '[' + x + ']').join('') : '';
+  const SECS = [2,4,6,6,5,4,3];
+  const DIAG = {
+    loop: `<svg viewBox="0 0 320 300" aria-label="Agent 工具迴圈">
+      <rect x="95" y="20" width="130" height="64" rx="14" fill="var(--ag)"/><text x="160" y="60" text-anchor="middle" font-size="24" font-weight="900" fill="#fff">AI（想）</text>
+      <rect x="95" y="196" width="130" height="64" rx="14" fill="var(--wf)"/><text x="160" y="236" text-anchor="middle" font-size="24" font-weight="900" fill="#fff">工具（做）</text>
+      <path d="M95,60 C30,90 30,200 95,228" fill="none" stroke="var(--wf)" stroke-width="5"/><polygon points="88,214 104,232 82,238" fill="var(--wf)"/>
+      <path d="M225,228 C290,200 290,90 225,60" fill="none" stroke="var(--ag)" stroke-width="5"/><polygon points="232,74 216,56 238,50" fill="var(--ag)"/>
+      <text x="6" y="150" font-size="18" fill="var(--ink)">要用工具</text><text x="262" y="150" font-size="18" fill="var(--ink)">看結果</text>
+      <text x="160" y="140" text-anchor="middle" font-size="18" fill="var(--muted)">不用工具 → 結束</text>
+      <text x="160" y="290" text-anchor="middle" font-size="16" fill="var(--muted)">圖意依 [E] 的 agent 圖</text></svg>`,
+    ladder: `<svg viewBox="0 0 320 320" aria-label="複雜度階梯">
+      ${[['0 單次呼叫','#9AA3B2'],['1 固定自動流','var(--wf)'],['1+ 指揮者派工','var(--sky)'],['2 單一 Agent','var(--ag)'],['3 Multi-Agent','var(--ma)']].map((r,k)=>`<rect x="${10+k*28}" y="${262-k*58}" width="${190}" height="48" rx="10" fill="${r[1]}"/><text x="${24+k*28}" y="${294-k*58}" font-size="20" font-weight="900" fill="#fff">${r[0]}</text>`).join('')}
+      <path d="M300,300 L300,40" stroke="var(--acc)" stroke-width="5"/><polygon points="288,48 300,22 312,48" fill="var(--acc)"/>
+      <text x="300" y="14" font-size="16" fill="var(--muted)" text-anchor="end">往上＝更彈性、更貴</text></svg>`
+  };
+  const stage = document.getElementById('stage');
+  const N = deck.slides.length;
+  deck.slides.forEach((s, i) => {
+    const el = document.createElement('section');
+    el.className = 'slide t-' + s.type;
+    const tl = SECS.map((m, k) => `<span style="flex:${m}" class="${s.sec ? (k + 1 < s.sec ? 'done' : (k + 1 === s.sec ? 'cur' : '')) : 'done'}"></span>`).join('');
+    const badge = s.sec ? `${ic('timer')}第 ${s.sec} 段｜${s.t0}–${s.t1}｜本頁 ${s.min} 分` : `${ic('book-open')}課後附錄`;
+    let h = `<div class="top"><div class="tl" title="7 段時間軸">${tl}</div><div class="badge">${badge}</div></div>`;
+    h += `<div class="story">${ic('tent')}${esc(s.story)}</div><h1>${esc(s.title)}</h1><div class="body">`;
+    if (s.type === 'cover') {
+      h += `<div class="cover-wrap"><ul class="pts" style="flex:1">${s.points.map(p => `<li>${pt(p)}</li>`).join('')}</ul>
+        <div class="cover-icons"><div class="wf">${ic('workflow')}固定自動流</div><div class="ag">${ic('repeat')}單一 Agent</div><div class="ma">${ic('network')}Multi-Agent</div></div></div>
+        <div class="callout">${pt(s.question)}</div>`;
+    } else if (s.type === 'agenda') {
+      h += `<div class="agenda">${s.items.map((it, k) => `<div class="ag-row ${['acc','acc','wf','ag','ma','acc','acc'][k]}">${ic(it.icon)}<div><div class="nm">${k + 1}. ${esc(it.name)}</div><div class="bar" style="width:${it.min / 6 * 100}%"></div></div><div class="rg">${esc(it.range)} 分｜Wiki ${esc(it.wiki)}</div><div class="mn">${it.min} 分鐘</div></div>`).join('')}</div><p class="note">${esc(s.note)}</p>`;
+    } else if (s.type === 'cards') {
+      h += `<div class="row">${s.cards.map(c => `<div class="card ${c.c}"><div class="hd">${ic(c.icon)}${esc(c.title)}</div><div class="tx">${pt(c.text)}</div></div>`).join('')}</div>`;
+      if (s.extra) h += `<ul class="pts">${s.extra.map(p => `<li>${pt(p)}</li>`).join('')}</ul>`;
+    } else if (s.type === 'table') {
+      h += `<table><tr>${s.head.map(x => `<th>${esc(x)}</th>`).join('')}</tr>${s.rows.map((r, k) => `<tr class="${(s.rowc || [])[k] || ''}">${r.map(c => `<td>${pt(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+      if (s.extra) h += `<ul class="pts">${s.extra.map(p => `<li>${pt(p)}</li>`).join('')}</ul>`;
+      if (s.takeaway) h += `<div class="callout">${pt(s.takeaway)}</div>`;
+    } else if (s.type === 'patterns') {
+      if (s.lead) h += `<div class="callout" style="font-size:20px">${pt(s.lead)}</div>`;
+      h += `<div class="pat" style="grid-template-columns:repeat(${s.items.length},1fr)">${s.items.map(p => `<div class="pcard"><div class="hd">${ic(p.icon)}${esc(p.name)}<em>${esc(p.min)}</em></div><div class="how">${pt(p.how)}</div><div class="ex">${pt(p.ex)}</div><div class="fair">${pt(p.fair)}</div></div>`).join('')}</div>`;
+      if (s.warn) h += `<div class="warns">${s.warn.map(w => `<div>${pt(w)}</div>`).join('')}</div>`;
+    } else if (s.type === 'steps') {
+      const c = s.diagram === 'loop' ? 'ag' : 'acc';
+      h += `<div class="steps"><ol class="st ${c}">${s.steps.map(x => `<li>${pt(x)}</li>`).join('')}</ol><div class="diagram">${DIAG[s.diagram] || ''}</div></div>`;
+      if (s.note) h += `<p class="note">${pt(s.note)}</p>`;
+    } else if (s.type === 'split') {
+      h += `<div class="split">${s.cols.map(c => `<div class="card ${c.c}"><div class="hd">${ic(c.icon)}${esc(c.h)}</div><ul class="pts">${c.pts.map(p => `<li>${pt(p)}</li>`).join('')}</ul></div>`).join('')}</div>`;
+    } else if (s.type === 'myths') {
+      h += `<div class="myths">${s.myths.map(m => `<div class="myth" tabindex="0"><div class="m">${ic('circle-x')}「${esc(m.myth)}」<span class="hint">（點我看答案）</span></div><div class="f">${ic('circle-check')}<span>${esc(m.fact)} <span class="ref">${refTxt(m.refs)}</span></span></div></div>`).join('')}</div>`;
+    } else if (s.type === 'quiz') {
+      h += `<ol class="quiz">${s.questions.map((q, k) => `<li tabindex="0"><div class="q">${k + 1}. ${esc(q.q)} <span class="hint">（點我看答案）</span></div><div class="a">答：${esc(q.a)} <span class="ref">${refTxt(q.refs)}</span></div></li>`).join('')}</ol>`;
+      if (s.takeaway) h += `<div class="callout">${pt(s.takeaway)}</div>`;
+    } else if (s.type === 'sources') {
+      h += `<div class="srcgrid"><div class="card"><div class="hd" style="color:var(--ag)">${ic('file-text')}內容來源（Wiki [A]–[E]）</div><ul class="srcs">${deck.sources.map(x => `<li><b>[${x.id}]</b>${esc(x.title)}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a></li>`).join('')}</ul></div>
+        <div class="card"><div class="hd" style="color:var(--wf)">${ic('sparkles')}風格參照（外部開源／公開方案）</div><ul class="srcs">${deck.style_refs.map(x => `<li><b style="color:var(--wf)">${esc(x.what)}</b>${esc(x.name)}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a><span class="note" style="font-size:15px">${esc(x.note)}</span></li>`).join('')}</ul></div></div>`;
+    }
+    h += `</div><footer><span>${s.type === 'sources' ? '完整來源＋風格參照' : '本頁來源：' + (refTxt(s.refs) || '—（課程地圖，無內容主張）')}</span><span>${esc(deck.title)}｜${i + 1} / ${N}</span></footer>`;
+    el.innerHTML = h;
+    stage.appendChild(el);
+  });
+  stage.querySelectorAll('.quiz li,.myth').forEach(li => li.addEventListener('click', e => { e.stopPropagation(); li.classList.toggle('open'); }));
+  const slides = [...stage.children];
+  let cur = Math.min(Math.max(parseInt(location.hash.slice(1)) - 1 || 0, 0), N - 1);
+  function fit(){ const k = Math.min(innerWidth / 1280, innerHeight / 720) * 0.96; slides.forEach(s => s.style.transform = `scale(${k})`); }
+  function show(n){ cur = Math.min(Math.max(n, 0), N - 1); slides.forEach((s, i) => s.classList.toggle('on', i === cur));
+    document.getElementById('bar').style.width = ((cur + 1) / N * 100) + '%'; history.replaceState(null, '', '#' + (cur + 1)); }
+  addEventListener('resize', fit);
+  addEventListener('hashchange', () => { const n = parseInt(location.hash.slice(1)) - 1; if (n !== cur && !isNaN(n)) show(n); });
+  addEventListener('keydown', e => { if (['ArrowRight','PageDown',' '].includes(e.key)) show(cur + 1); if (['ArrowLeft','PageUp'].includes(e.key)) show(cur - 1); });
+  document.getElementById('next').onclick = () => show(cur + 1);
+  document.getElementById('prev').onclick = () => show(cur - 1);
+  fit(); show(cur);
+})();
+</script>
+</body>
+</html>
