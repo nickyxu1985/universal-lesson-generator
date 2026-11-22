@@ -2,7 +2,11 @@
 // 依 docs/final-spec.md §6.2（Cloudflare Pages Functions）
 // 環境綁定：env.DB（D1）
 
-const CORS_HEADERS = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"};
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -26,7 +30,7 @@ export const onRequestGet = async ({ request, env }) => {
   try {
     let rows;
     if (q) {
-      // FTS5 全文檢索：命中前先做參數長度與基本字元檢查
+      // FTS5 全文檢索：q 以參數綁定進 MATCH，唯讀、非破壞性
       const stmt = env.DB.prepare(
         `SELECT w.id, w.topic, w.summary, w.r2_key, w.created_at, w.updated_at
            FROM wiki_fts f
@@ -49,12 +53,13 @@ export const onRequestGet = async ({ request, env }) => {
 
     return json({ query: q || null, count: rows.length, items: rows });
   } catch (e) {
-    // FTS5 查詢語法錯誤（如未加引號的保留字）回 400，其餘回 500
     const msg = String(e?.message || e);
-    if (msg.includes('fts5') || msg.includes('syntax')) {
-      return json({ error: 'invalid_fts_query', message: msg }, 400);
+    // FTS5 查詢語法錯誤（如未加引號的保留字）回 400，其餘回 500 通用訊息
+    if (msg.includes('fts5') || msg.toLowerCase().includes('syntax')) {
+      return json({ error: 'invalid_fts_query' }, 400);
     }
-    return json({ error: 'internal_error', message: msg }, 500);
+    console.error('[wiki] internal error:', msg);
+    return json({ error: 'internal_error' }, 500);
   }
 };
 

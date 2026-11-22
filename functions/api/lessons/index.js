@@ -1,8 +1,12 @@
-// GET /api/lessons — 最近 10 筆教案（依 created_at 倒序），支援 ?category=slug 篩選
-// 依 docs/final-spec.md §6.2（Cloudflare Pages Functions）
+// GET /api/lessons — 最近 10 筆教案（依 created_at 倒序），支援 ?category=slug 篛選
+// 另有 functions/api/lessons/recent.js 提供 spec §6.2 契約路徑 GET /api/lessons/recent
 // 環境綁定：env.DB（D1）
 
-const CORS_HEADERS = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"};
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -52,7 +56,8 @@ export const onRequestGet = async ({ request, env }) => {
 
     return json({ count: rows.length, items: rows });
   } catch (e) {
-    return json({ error: 'internal_error', message: String(e?.message || e) }, 500);
+    console.error('[lessons] internal error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
   }
 };
 

@@ -1,8 +1,13 @@
-// GET /api/jobs/:id — 回傳任務 status、progress、step_message 及完成後的 lesson_id
-// 依 docs/final-spec.md §6.2（Cloudflare Pages Functions）
+// GET /api/jobs/:id — 依 id 查一筆任務進度（jobs 表）
+// 依 docs/final-spec.md §6.2：公開回傳僅契約欄位 status、progress、step_message、lesson_id
+// （slack_thread_ts、error_message 等內部欄位屬 /admin 稽核用途，不對外公開）
 // 環境綁定：env.DB（D1）
 
-const CORS_HEADERS = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"};
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -24,8 +29,7 @@ export const onRequestGet = async ({ params, env }) => {
 
   try {
     const job = await env.DB.prepare(
-      `SELECT id, topic, audience, style, status, progress, step_message,
-               slack_thread_ts, lesson_id, error_message, created_at, updated_at
+      `SELECT status, progress, step_message, lesson_id
         FROM jobs WHERE id = ?`
     ).bind(id).first();
 
@@ -35,7 +39,9 @@ export const onRequestGet = async ({ params, env }) => {
 
     return json(job);
   } catch (e) {
-    return json({ error: 'internal_error', message: String(e?.message || e) }, 500);
+    // 不對外公開內部錯誤細節，僅留 log
+    console.error('[jobs/:id] internal error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
   }
 };
 

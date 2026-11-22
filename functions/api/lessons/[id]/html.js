@@ -1,8 +1,12 @@
-// GET /api/lessons/:id/html — 串流回傳 R2 內之簡報 HTML（Content-Type: text/html）
+// GET /api/lessons/:id/html
 // 依 docs/final-spec.md §6.2（Cloudflare Pages Functions）
 // 環境綁定：env.DB（D1）、env.WIKI_BUCKET（R2，路徑前綴 lessons/、notes/、wiki/ 區分）
 
-const CORS_HEADERS = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"};
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -46,7 +50,8 @@ export const onRequestGet = async ({ params, env }) => {
       },
     });
   } catch (e) {
-    return json({ error: 'internal_error', message: String(e?.message || e) }, 500);
+    console.error('[lessons/:id/html] internal error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
   }
 };
 

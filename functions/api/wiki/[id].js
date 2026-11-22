@@ -49,6 +49,7 @@ export const onRequestGet = async (context) => {
         }
       } catch (e) {
         // R2 讀取失敗不視為整體失敗，僅回傳 null 內文
+        console.error('[wiki/:id] r2 read error:', e?.message || e);
       }
     }
 
@@ -77,7 +78,9 @@ export const onRequestGet = async (context) => {
       updated_at: doc.updated_at,
     });
   } catch (e) {
-    return json({ error: 'internal_error', message: String(e?.message || e) }, 500);
+    // 不對外公開內部錯誤細節，僅留 log
+    console.error('[wiki/:id] internal error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
   }
 };
 
