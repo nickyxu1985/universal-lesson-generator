@@ -277,23 +277,25 @@ export const onRequestPost = async (context) => {
   if (!env.AI) {
     return json({ error: 'ai_not_configured' }, 503);
   }
+  // 審查 A：每次守門員呼叫都先計入 ai_checks（pass 與 reject/fail closed 皆計）。
+  // 連續 reject 也會消耗每日 100 次 AI 審核額度，落實 SPEC §4 硬鎖。
+  try {
+    await bumpDailyQuota(env, today, 'ai');
+  } catch (e) {
+    console.error('[generate] bump ai_checks error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
+  }
+
   let cleanTopic;
   try {
     const g = await runGatekeeper(env, input.topic, input.audience);
     if (!g.ok) {
+      // 被 reject 時 ai_checks 已計數（被擋的請求同樣耗用了一次 AI 審核）
       return json({ error: g.code, hint: '內容未通過審查' }, 400);
     }
     cleanTopic = g.cleanTopic;
   } catch (e) {
     console.error('[generate] gatekeeper error:', e?.message || e);
-    return json({ error: 'internal_error' }, 500);
-  }
-
-  // 審核通過後計入 ai_checks
-  try {
-    await bumpDailyQuota(env, today, 'ai');
-  } catch (e) {
-    console.error('[generate] bump ai_checks error:', e?.message || e);
     return json({ error: 'internal_error' }, 500);
   }
 
