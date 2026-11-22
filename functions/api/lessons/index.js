@@ -1,4 +1,4 @@
-// GET /api/lessons — 最近 10 筆教案（依 created_at 倒序），支援 ?category=slug 篛選
+// GET /api/lessons — 最近 10 筆教案（依 created_at 倒序），支援 ?category=slug 篩選
 // 另有 functions/api/lessons/recent.js 提供 spec §6.2 契約路徑 GET /api/lessons/recent
 // 環境綁定：env.DB（D1）
 
