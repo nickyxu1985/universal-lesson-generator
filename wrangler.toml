@@ -1,6 +1,6 @@
 # Cloudflare Pages 設定（D1 schema 用 migrations/ 管理）
-# 本 repo 不含任何真實 ID；部署時請於 Cloudflare 後台建立資源後填入對應 database_id / account_id。
-# 此 PR 僅定義程式碼，不執行部署。
+# database_id 是 D1 資源識別碼（非密鑰），可提交；密鑰絕對不要放進 repo。
+# 部署：GitHub 連結的 Pages 專案，production_branch = develop（試營運；正式上線後改 main）。
 name = "universal-lesson-generator"
 compatibility_date = "2026-11-01"
 pages_build_output_dir = "public"
@@ -8,7 +8,7 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "universal-lesson-generator"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "274212d3-edd7-46b1-b8bd-cf8bd95fb3fc"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
