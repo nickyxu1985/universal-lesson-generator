@@ -358,3 +358,56 @@ with Handoff Block + Wiki by email) is superseded.
 (`Error in workflow`) because the IF false branch is unconnected and
 responseMode is `lastNode` (no output node). B3 attaches Stage 2 there; until
 then, wiki-hit jobs error. Not a B2-reply issue.
+
+## 15. B3 Stage 2 — BUILT + TESTED 2026-11-23 17:12–17:20 (T4 PASSED)
+
+**Dispatch (after Wiki, 55%):** the Fleet Router B2 chain now continues
+`B2 Post Ack` → `B3 Get Job` (GET job-status for topic/audience/style) →
+`B3 Dispatch Stage 2` (posts `<@U0CBVT12GV7>` in the job thread with the Stage 2
+task + strict reply format: Job ID / Lesson ID / Title / Topic / Audience /
+Style / Wiki ID / `---SLIDES-START---` HTML `---SLIDES-END---` /
+`---NOTE-START---` Markdown `---NOTE-END---`). Lesson ID is `lsn_<job_id>`
+(sanitized) and is given explicitly so Instinct just copies it.
+
+**Reply (Instinct's Stage 2):** Fleet Router Switch **rule 7** matches a thread
+reply in #universal-lesson-generator containing `---SLIDES-START---` + `Job ID:`
+→ `B3 Post Lesson` (POST /api/internal/lesson) → `B3 Job Update (done)`
+(done/100 + lesson_id) → `B3 Post Done Ack` (🎉 + `/s/<lesson_id>` link).
+
+**thread_ts bug (fixed):** the three ack/dispatch nodes first used
+`$json.thread_ts`, but after an HTTP node `$json` is that node's API response
+(job-status / job-update), which has NO thread_ts — so Slack posted them as
+top-level channel messages instead of in the thread. Fixed to
+`$('Switch').item.json.thread_ts` (the paired original Slack message). The
+B3 done ack now lands in the thread (verified: thread_ts matches).
+
+**wiki_hit path (fixed, was 500):** the main workflow `lesson-generator-orchestrator`
+IF false branch (wiki_hit=true) was unconnected → webhook 500 (`lastNode` with
+no output node). Now connected: `Job Update (55% wiki hit)` → `Dispatch Stage 2
+(wiki hit)` (@instinct, same Stage 2 format, wiki_id from the webhook payload).
+**Test 2026-11-23 17:20:** webhook with wiki_hit=true → **HTTP 200** (the
+dispatch message), D1 job → researching/55 (`Wiki 已存在，進入階段二`).
+Note: the first attempt 500'd with `job_not_found` because the test job had not
+been created in D1 yet — the webhook assumes generate.js created the job
+(correct in production); the test now creates the job first.
+
+**Test T4 (end-to-end B2+B3, 2026-11-23 17:12):** test job
+`test-b3-20261123-1710` (junior/story) → simulated Cue Wiki reply → B2 wrote
+Wiki, D1 55%, B3 dispatched @instinct → simulated Instinct Stage 2 reply →
+B3 wrote the lesson, D1 **done/100** + lesson_id `lsn_test-b3-20261123-1710`,
+D1 `lessons` row complete, `/s/<id>` **HTTP 200**, recent API lists it, done
+ack in the thread. Fleet Router execution 1796 (all 7 B3 nodes, success).
+Test data cleaned (D1 + R2). Slack test messages left as evidence.
+
+**job-status extended** (commit `bdd7ac28`, deploy `e35fc6ea`): now also returns
+`topic`, `audience`, `style` (B3 dispatch needs them).
+
+**Fleet Router now:** 19 nodes, 8 Switch rules (0–5 @mentions, 6 Wiki, 7 Stage 2).
+Main workflow: 8 nodes. Authoritative exports:
+`~/workspace/goals/taica-week-8-ai-agent-assignment-and-final-project-proposal/files/b-workflow-b1.json`
+(main) and `fleet-router-final.json` (Fleet Router).
+
+**Remaining B work:** T5 (12-min timeout reassignment) — needs a Wait/timeout
+mechanism + a second dispatch; C (Hark relay rebuild), D (content), E
+(governance) are separate workstreams. AI binding still blocks the end-to-end
+generate → webhook test (user submits on the site).
