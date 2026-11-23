@@ -1,9 +1,14 @@
 # Cloudflare Pages 設定（D1 schema 用 migrations/ 管理）
 # database_id 是 D1 資源識別碼（非密鑰），可提交；密鑰絕對不要放進 repo。
 # 部署：GitHub 連結的 Pages 專案，production_branch = develop（試營運；正式上線後改 main）。
+# 密鑰（Turnstile／n8n）於 Pages 後台 > Settings > Environment variables 設定：
+#   TURNSTILE_SECRET_KEY, N8N_WEBHOOK_URL, N8N_SECRET_TOKEN
 name = "universal-lesson-generator"
 compatibility_date = "2026-11-01"
 pages_build_output_dir = "public"
+
+[ai]
+binding = "AI"
 
 [[d1_databases]]
 binding = "DB"
