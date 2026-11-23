@@ -47,6 +47,10 @@
   - 通過：78 項原 API 回歸＋14 項瀏覽器／恢復斷言。
 - 14:44：用戶裁示——修 P2（隔離），切完整 GLM 5.3。
 - 14:45：新 Vibe Code session（專案 universal-lesson-generator，模型 GLM-5.3 Mistral Hosted 完整版，非 Flash），session「PR #17: 刪除失敗教案公開 404 修正」，P2 修正已派送（同一分支、同一支 PR #17）。等 GLM 5.3 回報新 head 與冒煙後，再請 Instinct 第三輪重審。
+- 14:49：P2 修正完成。新 head `16fd65d7`。設計：admin_status 欄位（migration 0003，只交檔；active／deleting／cleanup_failed，預設 active）；DELETE 動手清 R2 前先標記 deleting，任一步失敗改 cleanup_failed、回 502／500、列與 keys 保留、可重試；公開端點（recent、lessons、html、note、wiki related）只取 active；admin lessons 列表加 admin_status 並支援 ?status 過濾。冒煙 46/46。PM 核對 head、DELETE 邏輯與 recent.js 過濾。
+- 14:56：PM 請 Instinct 第三輪重審。
+- 14:59：第三輪重審（Instinct，PR #17 issuecomment-7093861922）：公開隔離與重試已通過，P1 無回歸；整體暫不通過。唯一剩餘項：admin API 雖回 admin_status，admin.js 未使用它——D1 清理失敗後 reload，cleanup_failed 仍顯示一般可編輯列、按鈕仍叫「下架刪除」。建議本輪只補「清理中／清理失敗」標籤及「重試清理」按鈕文案，不加篩選、不重構。通過數：78 項原回歸＋76 項隔離／公開端點／遷移＋14 項瀏覽器／恢復斷言。
+- 15:02：PM 裁示不採「接受 API 可辨識足夠」，依建議小補 admin.js；修正派給完整 GLM 5.3（同一 session、同一分支、同一支 PR #17），冒煙須覆蓋 admin 畫面狀態顯示；新 head 完成後請 Instinct 第四輪重審（只驗本項）。合併、migration 0002＋0003、部署全部先停。
 
 ## 模型備註
 
