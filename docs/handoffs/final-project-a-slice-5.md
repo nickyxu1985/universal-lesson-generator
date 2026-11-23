@@ -40,6 +40,13 @@
   - P2 修正：順序改為先清 R2、全部成功後才刪 D1 列；D1 DELETE 失敗 → 回 500 `internal_error`，列與 keys 仍在、可重試。
   - 不做跨 D1/R2 原子交易。
 - 14:32：PM 核對新 head 與 DELETE 邏輯（GitHub API），請 Instinct 第二輪重審。
+- 14:35：第二輪重審不通過（Instinct，PR #17 issuecomment-7093471553）。
+  - P1 已修：R2 失敗回 502、保留列與 keys、可重試，實測通過。
+  - P2 尚未關閉：R2 兩個物件已刪、D1 DELETE 失敗時，公開 recent 仍列該教案，HTML／note 均 404；第一 key 成功、第二 key 失敗也會留下 HTML 404 的公開教案。保留 keys 不等於保留成品。
+  - 建議：本輪隔離清理中／失敗教案，公開列表排除、admin 可辨識並重試。若 PM 選擇接受人工重試前公開列表可能含 404 教案，須明確裁示、記「接受風險」，不能記「P2 已修」。不要求跨 D1/R2 原子交易。
+  - 通過：78 項原 API 回歸＋14 項瀏覽器／恢復斷言。
+- 14:44：用戶裁示——修 P2（隔離），切完整 GLM 5.3。
+- 14:45：新 Vibe Code session（專案 universal-lesson-generator，模型 GLM-5.3 Mistral Hosted 完整版，非 Flash），session「PR #17: 刪除失敗教案公開 404 修正」，P2 修正已派送（同一分支、同一支 PR #17）。等 GLM 5.3 回報新 head 與冒煙後，再請 Instinct 第三輪重審。
 
 ## 模型備註
 
