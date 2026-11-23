@@ -275,3 +275,33 @@ wording is superseded by this ruling — update §4 when B2-reply lands.
 - Note: plain `urllib` requests to job-update get Cloudflare 1010 (bot block);
   a browser User-Agent gets through. n8n's calls (with the real secret) work.
 **T6: PASS** (auth enforced on both the webhook and job-update).
+
+## 13. Fallback internal endpoints — BUILT + TESTED 2026-11-23 16:42
+
+**User decision (16:42):** build the fallback endpoints (no new n8n Cloudflare
+credential). PM built both directly (following `job-update.js` closely);
+they are A-extension slices, NOT via GLM — Instinct review available on request.
+
+- **POST /api/internal/wiki** (`functions/api/internal/wiki.js`, commit `1958c04f`):
+  Auth X-Secret-Token (503 if unconfigured, 401 if wrong). Body: `job_id`,
+  `wiki_id` (`[A-Za-z0-9_-]+`), `topic` (≤100 chars), `markdown` (2000–200000
+  chars, SPEC §7.4), optional `summary` (≤500), `source_urls` (≤20).
+  Writes R2 `wiki/<wiki_id>.md` then D1 `wiki_docs` (INSERT OR REPLACE;
+  FTS5 synced by trigger). Returns 201 `{id, topic, r2_key, job_id}`.
+  400 invalid_* / 404 job_not_found / 500 internal_error.
+  **Tested:** markdown 1784 chars → 400 (validation works); 2484 chars →
+  **201**; D1 row + FTS `MATCH 'B2'` verified; test data cleaned up.
+- **POST /api/internal/lesson** (`functions/api/internal/lesson.js`, same commit):
+  Auth same. Body: `job_id`, `lesson_id`, `title` (≤200), `topic` (≤100),
+  `audience`/`style` (enum), `html` (non-empty, ≤500000), `note` (non-empty,
+  ≤200000), optional `wiki_id` (must exist), `category_id` (must exist).
+  Writes R2 `lessons/<id>.html` + `notes/<id>.md` then D1 `lessons`
+  (INSERT OR REPLACE). Returns 201 `{id, r2_html_key, r2_note_key, job_id}`.
+  **Tested:** **201** (one transient Cloudflare edge connection reset on the
+  first attempt — the write still landed; retry returned 201 cleanly).
+  D1 row verified; test data cleaned up (D1 + R2).
+- **Deployed** `cd9f49c1` (commit `1958c04f`, production, success).
+- **Note:** job progress updates stay with `POST /api/internal/job-update`
+  (n8n calls it separately). These endpoints are single-purpose (Wiki / lesson
+  storage only). R2-before-D1 ordering avoids orphan D1 rows; a D1 failure
+  after R2 leaves an orphan R2 file that a retry overwrites (idempotent).
