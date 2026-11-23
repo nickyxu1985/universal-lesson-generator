@@ -144,32 +144,42 @@ export const onRequestDelete = async ({ params, env }) => {
     return json({ error: 'invalid_lesson_id' }, 400);
   }
 
+  let lesson;
   try {
-    const lesson = await env.DB.prepare(
+    lesson = await env.DB.prepare(
       'SELECT id, r2_html_key, r2_note_key FROM lessons WHERE id = ?'
     ).bind(id).first();
-    if (!lesson) {
-      return json({ error: 'lesson_not_found', id }, 404);
-    }
-
-    // R2 檔案清理：盡力刪除，單一 key 失敗只留 log（不阻擋刪除流程，也不洩漏內部細節）
-    for (const key of [lesson.r2_html_key, lesson.r2_note_key]) {
-      if (!key) continue;
-      try {
-        await env.WIKI_BUCKET.delete(key);
-      } catch (e) {
-        console.error('[admin/lessons/:id] r2 delete error:', e?.message || e);
-      }
-    }
-
-    // 只刪 lessons 列；wiki_docs 是共享知識庫，jobs 历史保留
-    await env.DB.prepare('DELETE FROM lessons WHERE id = ?').bind(id).run();
-
-    return json({ ok: true, id }, 200);
   } catch (e) {
-    console.error('[admin/lessons/:id] delete error:', e?.message || e);
+    console.error('[admin/lessons/:id] read error:', e?.message || e);
     return json({ error: 'internal_error' }, 500);
   }
+  if (!lesson) {
+    return json({ error: 'lesson_not_found', id }, 404);
+  }
+
+  // 先清 R2、成功後才刪 D1 列（不做跨 D1/R2 原子交易，但失敗必須可見且可重試）：
+  // 任一 key 刪除拋例外 → 回 502、保留 lessons 列與兩個 r2 keys，管理員可用同一 DELETE 重試
+  // （重試時已刪掉的 key 在 R2 為 no-op，不會誤刪）
+  for (const key of [lesson.r2_html_key, lesson.r2_note_key]) {
+    if (!key) continue;
+    try {
+      await env.WIKI_BUCKET.delete(key);
+    } catch (e) {
+      console.error('[admin/lessons/:id] r2 delete error:', e?.message || e);
+      return json({ error: 'r2_delete_failed' }, 502);
+    }
+  }
+
+  // R2 清掉後才刪 lessons 列（wiki_docs 是共享知識庫不刪、jobs 历史保留）；
+  // D1 刪除失敗也回錯（列與 keys 仍在、可重試），不讓「檔案已刪但列殘留」靜默發生
+  try {
+    await env.DB.prepare('DELETE FROM lessons WHERE id = ?').bind(id).run();
+  } catch (e) {
+    console.error('[admin/lessons/:id] d1 delete error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
+  }
+
+  return json({ ok: true, id }, 200);
 };
 
 export const onRequestOptions = async () =>
