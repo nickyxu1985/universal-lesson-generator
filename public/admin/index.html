@@ -11,7 +11,7 @@
  * 格式：https://<workspace>.slack.com/archives/<channel_id>/
  * 填入後「任務列表」的 slack_thread_ts 會即時組出可點回 Slack 查核的
  * Thread 連結（…/archives/<channel>/<ts>）；留空則僅顯示 ts 文字。
- * 本頁不處理鑑權：Cloudflare Access 由部署端保護（spec §6.1）。
+ * 鑑權不在本頁範圍：由部署端的零信任機制保護（另見 spec §6.1）。
  * ============================================================ */
 window.SLACK_CHANNEL_URL = '';
 </script>
@@ -30,7 +30,6 @@ window.SLACK_CHANNEL_URL = '';
   <h1>管理後台</h1>
   <p class="muted">
     分類管理、教案管理、每日額度與任務稽核。
-    本頁由 Cloudflare Access 零信任保護（部署端設定）。
     後端 <code>/api/admin/*</code> 屬切片 5，尚未部署前各區塊會顯示「尚未上線」而不報錯。
   </p>
 

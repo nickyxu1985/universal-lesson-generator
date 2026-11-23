@@ -102,15 +102,17 @@
             daily_quota_exceeded: '本日全站生成額度已用完',
           };
           showFormError(hints[r.body.error] || ('送出失敗：' + (r.body.error || 'unknown')));
+          turnstileToken = null; // 舊 token 已隨本請求消耗：重置 widget 後須重新驗證
           if (turnstileWidgetId !== null && window.turnstile) window.turnstile.reset(turnstileWidgetId);
-          submitBtn.disabled = !turnstileReady();
+          updateSubmit();
           submitBtn.textContent = '開始生成';
           return;
         }
         startTracking(r.body.job_id);
-        submitBtn.textContent = '已送出，可再生成下一份';
-        submitBtn.disabled = !turnstileReady();
+        turnstileToken = null; // 舊 token 已隨本請求消耗：重新驗證後才可再送
         if (turnstileWidgetId !== null && window.turnstile) window.turnstile.reset(turnstileWidgetId);
+        updateSubmit();
+        submitBtn.textContent = '已送出，完成人機驗證後可再生成下一份';
       })
       .catch(function () {
         showFormError('連線失敗，請稍後再試');
@@ -140,6 +142,13 @@
     fetch('/api/jobs/' + encodeURIComponent(jobId))
       .then(function (res) { return res.json().then(function (b) { return { status: res.status, body: b }; }); })
       .then(function (r) {
+        if (r.status === 404) {
+          // 任務已不存在（過期／刪除或 id 無效）：明確提示並停止輪詢，不無限重試
+          $('progress-msg').textContent = '❌ 找不到此任務（可能已過期或已刪除），請重新生成。';
+          $('progress-msg').className = 'progress-msg';
+          stopTracking();
+          return;
+        }
         if (r.status !== 200) { return; } // 網路/暫態問題：下輪再試，不當機
         renderProgress(r.body, jobId);
       })
@@ -208,9 +217,14 @@
   window.loadRecent = function (categorySlug) {
     var url = '/api/lessons/recent' + (categorySlug ? '?category=' + encodeURIComponent(categorySlug) : '');
     fetch(url)
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var items = (data && data.items) || [];
+      .then(function (res) { return res.json().then(function (b) { return { status: res.status, body: b }; }); })
+      .then(function (r) {
+        if (r.status !== 200) {
+          $('recent-empty').hidden = false;
+          $('recent-empty').textContent = '最近教案載入失敗（' + ((r.body && r.body.error) || r.status) + '）。';
+          return;
+        }
+        var items = (r.body && r.body.items) || [];
         var grid = $('recent-grid');
         grid.innerHTML = '';
         $('recent-empty').hidden = items.length > 0;

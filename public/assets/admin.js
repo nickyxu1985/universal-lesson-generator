@@ -8,7 +8,9 @@
 //   POST   /api/admin/categories  {name}    -> 201 {id,...}
 //   PATCH  /api/admin/categories/:id {name?, sort_order?}
 //   GET    /api/admin/lessons?limit=50      -> { items:[{id,title,audience,style,category_id,category_name,created_at}] }
-//   PATCH  /api/admin/lessons/:id {category_id?}
+//   PATCH  /api/admin/lessons/:id {category_id?, tags?: string[]}
+//     （spec §6.1「修改教案所屬分類與標籤」；注意 §5 D1 lessons 表目前尚無 tags 欄位，
+//       tags 的儲存 schema 需由切片 5 後端 + D1 遷移定義，本頁先照此契約送出）
 //   DELETE /api/admin/lessons/:id          （R2 清理由後端負責）
 //   GET    /api/admin/quota                 -> { date, ai_checks, ai_daily_limit, lessons_created, lessons_daily_limit }
 //   GET    /api/admin/jobs?limit=50         -> { items:[{id,topic,audience,style,status,progress,slack_thread_ts,lesson_id,created_at}] }
@@ -45,26 +47,27 @@
       if (!r) return;
       if (r.status !== 200) { $('cat-list').innerHTML = notice('讀取分類失敗：' + (r.body.error || r.status)); return; }
       var items = r.body.items || [];
+      // 注意：HTML 不允許 <form> 直接包住表格列（form-in-tr 會被瀏覽器重排而失效），
+      // 這裡每列用 <tr data-id> 包 input，按「儲存」按鈕時回讀該列欄位送 PATCH。
       var html = '<table><tr><th>名稱</th><th>slug</th><th>排序</th><th>操作</th></tr>';
       items.forEach(function (c) {
-        html += '<tr><form class="cat-row" data-id="' + esc(c.id) + '">' +
-          '<td><input type="text" name="name" value="' + esc(c.name) + '" class="cat-name"></td>' +
+        html += '<tr class="cat-row" data-id="' + esc(c.id) + '">' +
+          '<td><input type="text" class="cat-name" value="' + esc(c.name) + '" maxlength="50"></td>' +
           '<td>' + esc(c.slug) + '</td>' +
-          '<td><input type="number" name="sort_order" value="' + esc(c.sort_order) + ' style="width:70px" class="cat-sort"></td>' +
-          '<td><button type="submit" class="btn secondary" data-act="save">儲存</button></td></form></tr>';
+          '<td><input type="number" class="cat-sort" value="' + esc(c.sort_order) + '" style="width:70px"></td>' +
+          '<td><button type="button" class="btn secondary" data-act="save">儲存</button></td></tr>';
       });
       html += '</table><small class="hint">排序數字越小越前面（sort_order）。</small>';
       $('cat-list').innerHTML = html;
-      $('cat-list').querySelectorAll('.cat-row').forEach(function (form) {
-        form.addEventListener('submit', function (ev) {
-          ev.preventDefault();
-          var id = form.getAttribute('data-id');
+      $('cat-list').querySelectorAll('tr.cat-row').forEach(function (tr) {
+        tr.querySelector('[data-act="save"]').addEventListener('click', function () {
+          var id = tr.getAttribute('data-id');
           apiCall('/api/admin/categories/' + encodeURIComponent(id), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              name: form.querySelector('.cat-name').value.trim(),
-              sort_order: Number(form.querySelector('.cat-sort').value) || 0,
+              name: tr.querySelector('.cat-name').value.trim(),
+              sort_order: Number(tr.querySelector('.cat-sort').value) || 0,
             }),
           }, 'cat-offline').then(function (r2) {
             if (r2 && r2.status !== 200) alert('更新失敗：' + (r2.body.error || r2.status));
@@ -90,7 +93,7 @@
     });
   });
 
-  // ---------- ② 教案管理（改分類 / 下架刪除） ----------
+  // ---------- ② 教案管理（改分類與標籤 / 下架刪除） ----------
   function loadLessons() {
     apiCall('/api/admin/lessons?limit=50', null, 'lesson-offline').then(function (r) {
       if (!r) return;
@@ -99,32 +102,41 @@
       apiCall('/api/admin/categories', null, null).then(function (rc) {
         var cats = (rc && rc.status === 200 && rc.body.items) || [];
         var items = r.body.items || [];
-        var html = '<table><tr><th>標題</th><th>受眾/風格</th><th>目前分類</th><th>建立時間</th><th>操作</th></tr>';
+        var html = '<table><tr><th>標題</th><th>受眾/風格</th><th>目前分類</th><th>標籤（逗號分隔）</th><th>建立時間</th><th>操作</th></tr>';
         items.forEach(function (l) {
           var opts = cats.map(function (c) {
             return '<option value="' + esc(c.id) + '"' + (c.id === l.category_id ? ' selected' : '') + '>' + esc(c.name) + '</option>';
           }).join('');
+          var tags = Array.isArray(l.tags) ? l.tags.join(', ') : '';
           html += '<tr class="row-actions" data-id="' + esc(l.id) + '">' +
             '<td>' + esc(l.title) + '</td>' +
             '<td><span class="tag">' + (AUDIENCE_LABELS[l.audience] || esc(l.audience)) + '</span><span class="tag">' + esc(l.style) + '</span></td>' +
             '<td>' + (cats.length
               ? '<select class="lesson-cat">' + opts + '</select>'
               : esc(l.category_name || '未分類')) + '</td>' +
+            '<td><input type="text" class="lesson-tags" value="' + esc(tags) + '" placeholder="標籤1, 標籤2" maxlength="200"></td>' +
             '<td>' + esc(l.created_at || '') + '</td>' +
-            '<td><button type="button" class="btn secondary" data-act="setcat">改分類</button> ' +
+            '<td><button type="button" class="btn secondary" data-act="setcat">儲存變更</button> ' +
             '<button type="button" class="btn" style="background:var(--err)" data-act="del">下架刪除</button></td></tr>';
         });
         html += '</table>';
         $('lesson-admin-list').innerHTML = html;
         $('lesson-admin-list').querySelectorAll('tr.row-actions').forEach(function (tr) {
           var id = tr.getAttribute('data-id');
+          // 儲存變更：一次 PATCH 送出分類（若有下拉）與標籤
           tr.querySelector('[data-act="setcat"]').addEventListener('click', function () {
             var sel = tr.querySelector('.lesson-cat');
-            if (!sel) return;
+            var tagsInput = tr.querySelector('.lesson-tags');
+            var body = {};
+            if (sel) body.category_id = Number(sel.value);
+            if (tagsInput) {
+              body.tags = tagsInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
+            }
+            if (!Object.keys(body).length) return;
             apiCall('/api/admin/lessons/' + encodeURIComponent(id), {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ category_id: Number(sel.value) }),
+              body: JSON.stringify(body),
             }, 'lesson-offline').then(function (r2) {
               if (r2 && r2.status !== 200) alert('更新失敗：' + (r2.body.error || r2.status));
               else loadLessons();
