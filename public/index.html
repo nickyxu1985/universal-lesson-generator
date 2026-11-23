@@ -1,9 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
-<head><meta charset="utf-8"><title>萬用教案生成器（建置中）</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>萬用教案生成器</title>
+<link rel="stylesheet" href="/assets/style.css">
+<script>
+/* ============================================================
+ * ★ 部署端設定點：Turnstile site key ★
+ * 由 Cloudflare Pages 後台／部署端填入（spec §6.1：Turnstile 驗證）。
+ * 不寫死任何假 key：留空時表單會顯示「驗證服務未設定」並停用送出，
+ * 填入有效 site key 後自動渲染 widget 並啟用送出。
+ * ============================================================ */
+window.TURNSTILE_SITEKEY = '';
+</script>
+</head>
 <body>
-<h1>萬用教案生成器</h1>
-<p>建置中：首頁將由期末專案 A 後續切片完成。目前僅提供 API，例如 <a href="/api/wiki/test">GET /api/wiki/:id</a>。</p>
-<p>原始碼：<a href="https://github.com/nickyxu1985/universal-lesson-generator">universal-lesson-generator</a>（develop 分支）。</p>
+<nav class="nav">
+  <a class="logo" href="/">📚 萬用教案生成器</a>
+  <div class="links">
+    <a href="/" class="active">首頁</a>
+    <a href="/wiki">LLM-Wiki 知識庫</a>
+    <a href="/admin">管理後台</a>
+  </div>
+</nav>
+
+<main class="container">
+  <div class="card">
+    <h1>自動生成教案</h1>
+    <p class="muted">輸入教學主題，系統自動檢索知識庫並產出「Obsidian 教師詳案」與「互動式課堂簡報」。</p>
+
+    <form id="gen-form" novalidate>
+      <label for="topic">教學主題（1–40 字）</label>
+      <input type="text" id="topic" name="topic" maxlength="40" placeholder="例如：認識資料庫" autocomplete="off" required>
+      <small class="hint" id="topic-count">0 / 40</small>
+
+      <label for="audience">受眾</label>
+      <select id="audience" name="audience">
+        <option value="elementary">國小（elementary）</option>
+        <option value="junior" selected>國中（junior）</option>
+        <option value="senior">高中（senior）</option>
+      </select>
+
+      <label for="style">風格</label>
+      <select id="style" name="style">
+        <option value="story">故事引導風（story）</option>
+        <option value="hands_on">實作演練風（hands_on）</option>
+        <option value="exam">重點攻略風（exam）</option>
+        <option value="visual">圖解速覽風（visual）</option>
+      </select>
+
+      <label for="duration">簡報時間（分鐘，預設 50，上限 240）</label>
+      <input type="number" id="duration" name="duration" min="1" max="240" step="1" value="50">
+
+      <div id="turnstile-slot" style="margin: 0.9rem 0;"></div>
+      <div id="turnstile-notice" class="notice info" hidden>
+        人機驗證（Turnstile）尚未設定：site key 留空於本頁頂部「部署端設定點」。
+        接線後填入即自動啟用，目前送出功能停用中。
+      </div>
+
+      <button type="submit" id="submit-btn" disabled>開始生成</button>
+    </form>
+    <div id="form-error" class="error-box" hidden></div>
+  </div>
+
+  <section class="card progress-wrap" id="progress-card" hidden>
+    <h2>生成進度</h2>
+    <div class="progress-stages" id="progress-stages">
+      <span class="stage" data-stage="10">10% 檢索知識庫</span>
+      <span class="stage" data-stage="30">30% 派發 Agent 蒐集官方文件</span>
+      <span class="stage" data-stage="55">55% 寫入 LLM-Wiki</span>
+      <span class="stage" data-stage="80">80% 撰寫詳案與簡報</span>
+      <span class="stage" data-stage="100">100% 完成</span>
+    </div>
+    <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="progress-msg" id="progress-msg">準備中…</div>
+    <div class="muted" id="progress-jobid"></div>
+    <div class="result-actions" id="result-actions" hidden>
+      <a class="btn ok" id="btn-slides" href="#" target="_blank" rel="noopener">開啟 HTML 簡報</a>
+      <a class="btn secondary" id="btn-note-view" href="#" target="_blank" rel="noopener">檢視教師詳案</a>
+      <button class="btn secondary" id="btn-note-download" type="button">下載教師詳案 (.md)</button>
+    </div>
+  </section>
+
+  <h2>最近生成教案</h2>
+  <div id="recent-chips" style="margin-bottom: 0.6rem;"></div>
+  <div class="lesson-grid" id="recent-grid"></div>
+  <div class="muted" id="recent-empty" hidden>目前還沒有完成的教案。</div>
+</main>
+
+<script src="/assets/home.js"></script>
 </body>
 </html>

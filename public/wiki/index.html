@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM-Wiki 知識庫 — 萬用教案生成器</title>
+<link rel="stylesheet" href="/assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="/">📚 萬用教案生成器</a>
+  <div class="links">
+    <a href="/">首頁</a>
+    <a href="/wiki" class="active">LLM-Wiki 知識庫</a>
+    <a href="/admin">管理後台</a>
+  </div>
+</nav>
+
+<main class="container">
+  <h1>LLM-Wiki 知識庫</h1>
+  <p class="muted">中立技術知識原件，輸入關鍵字即時搜尋（D1 FTS5 全文檢索），點擊條目讀取內文。</p>
+  <div class="card">
+    <input type="text" id="wiki-q" placeholder="搜尋關鍵字（如：資料庫、FTS5）…" autocomplete="off">
+    <div class="muted" id="wiki-status"></div>
+  </div>
+
+  <div class="wiki-layout">
+    <section id="wiki-list">
+      <div class="muted">載入中…</div>
+    </section>
+    <section class="card" id="wiki-detail">
+      <div class="muted">← 點擊左側條目查看內容</div>
+    </section>
+  </div>
+</main>
+
+<script src="/assets/wiki.js"></script>
+</body>
+</html>

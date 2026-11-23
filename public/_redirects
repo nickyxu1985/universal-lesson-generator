@@ -1,0 +1,2 @@
+# /s/:id 由前端 JS 解析路徑參數（不動 functions/，僅用靜態 SPA 規則）
+/s/* /s/index.html 200
