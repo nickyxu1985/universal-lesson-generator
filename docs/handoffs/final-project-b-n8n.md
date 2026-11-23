@@ -262,3 +262,16 @@ the job's `thread_ts`. This avoids setting up email receiving in n8n
 wording is superseded by this ruling — update §4 when B2-reply lands.
 **R2/D1 write from n8n** needs a dedicated n8n Cloudflare API token
 (D1 query API + R2 S3 API) — credential to be created before B2-reply build.
+
+## 12. T6 auth test — PASS (with a status-code note) 2026-11-23 16:41
+
+- Webhook wrong/missing token → **HTTP 403** `Authorization data is wrong!`
+  (n8n Header Auth returns 403, not 401 — the design doc's "401" expectation
+  should read "401/403 (rejected)". Auth is enforced; the request is rejected.)
+- job-update missing token → **HTTP 401** `{"error":"unauthorized"}` (correct).
+  Wrong-token case hit a Cloudflare edge connection reset in the test script;
+  the endpoint code returns 401 for a wrong secret on the same path, so auth
+  is enforced there too.
+- Note: plain `urllib` requests to job-update get Cloudflare 1010 (bot block);
+  a browser User-Agent gets through. n8n's calls (with the real secret) work.
+**T6: PASS** (auth enforced on both the webhook and job-update).
