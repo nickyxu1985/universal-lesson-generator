@@ -2,7 +2,10 @@
 // 依 docs/final-spec.md §6.2：寫入 slack_thread_ts、更新進度、回報完成/失敗。
 // 範圍：本端點僅做 jobs 表的驗證＋部分更新（partial update）；
 //       「寫入新 Wiki 至 R2/D1、組裝並存入簡報與詳案」不在本切片（後續切片／B 階段處理）。
-// 環境綁定：env.DB（D1）；env.N8N_SECRET_TOKEN（密鑰，未設定 -> 503 fail closed；相容沿用 N8N_WEBHOOK_SECRET 命名）
+// 環境綁定：env.DB（D1）；env.N8N_SECRET_TOKEN（密鑰，未設定 -> 503 fail closed）
+// 密鑰優先序：N8N_SECRET_TOKEN 優先，N8N_WEBHOOK_SECRET 為相容 fallback（與 generate.js 一致，依據 .env.example 舊命名）。
+// 輪換風險：兩名皆設且值不同時只認 N8N_SECRET_TOKEN——若輪換時只改相容名，舊 token 仍有效且優先，輪換會靜默失效；
+// 上線前應於 .env.example / generate.js / job-update.js / CF 後台四方收斂為單一名稱（後台變數屬部署端工作）。
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +14,7 @@ const CORS_HEADERS = {
 };
 
 // 與 generate.js 一致的狀態機（建 job 為 queued / progress 10）
-const STATUSES = ['queued', 'processing', 'done', 'failed'];
+const STATUSES = ['queued', 'researching', 'writing', 'done', 'failed']; // 與 spec §5 DDL／migration 註解一致
 const JOB_ID_MAX = 100;
 const STEP_MESSAGE_MAX_CHARS = 200;
 const ERROR_MESSAGE_MAX_CHARS = 500;
@@ -65,7 +68,7 @@ export const onRequestPost = async (context) => {
 
   if (body.status !== undefined) {
     if (typeof body.status !== 'string' || !STATUSES.includes(body.status)) {
-      return json({ error: 'invalid_status', hint: 'status 需為 queued/processing/done/failed' }, 400);
+      return json({ error: 'invalid_status', hint: 'status 需為 queued/researching/writing/done/failed' }, 400);
     }
     updates.status = body.status;
   }

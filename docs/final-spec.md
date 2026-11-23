@@ -210,7 +210,7 @@ CREATE TABLE jobs (
 | `GET /api/lessons/:id/note` | 公開 | 回傳 R2 內之 Obsidian 教師詳案 Markdown（支援檢視與下載）。 |
 | `GET /api/wiki` | 公開 | 撈取 Wiki 清單，或透過 `?q=keyword` 執行 D1 FTS5 全文檢索。 |
 | `GET /api/wiki/:id` | 公開 | 讀取指定 Wiki 的 R2 Markdown 內文、來源網址與關聯教案。 |
-| `POST /api/internal/job-update` | 內部密鑰（`X-Secret-Token`） | 專供 n8n 呼叫：寫入 `slack_thread_ts`、更新進度百分比、寫入新 Wiki 至 R2/D1、組裝並存入簡報與詳案。 |
+| `POST /api/internal/job-update` | 內部密鑰（`X-Secret-Token`） | 專供 n8n 呼叫：寫入 `slack_thread_ts`、更新進度百分比。本端點僅做 D1 jobs 表的更新；R2 Wiki 寫入與簡報／詳案組裝由 B 階段 n8n 端處理。 |
 | `ALL /api/admin/*` | Cloudflare Access | 分類管理（CRUD）、教案中繼資料修改、刪除異常教案與 R2 檔案清理。 |
 
 ---
@@ -292,7 +292,7 @@ CREATE TABLE jobs (
 
 ### Phase 2：核心 API 與安全守門員開發（Day 3～5）
 1. 實作 `POST /api/generate`（整合 Turnstile、40 字上限、3 檔受眾與 4 檔風格枚舉檢查、`daily_quota` 閘門與 Workers AI 主題淨化）。
-2. 實作 `GET /api/jobs/:id`、`POST /api/internal/job-update`（含 `slack_thread_ts` 寫入、R2 存檔與 HTML 母版組裝）。
+2. 實作 `GET /api/jobs/:id`、`POST /api/internal/job-update`（`job-update` 本體僅做 D1 jobs 表更新：`slack_thread_ts` 寫入、進度更新；R2 存檔與 HTML 母版組裝由 B 階段 n8n 端處理，非本端點職責）。
 3. 使用 Mock 請求驗證表單送出、D1 寫入、AI 攔截異常輸入與狀態更新閉環。
 
 ### Phase 3：n8n 工作流、Slack Thread 隔離與白盒交接串接（Day 6～8）
