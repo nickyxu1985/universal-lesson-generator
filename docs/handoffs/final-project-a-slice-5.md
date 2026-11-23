@@ -51,6 +51,8 @@
 - 14:56：PM 請 Instinct 第三輪重審。
 - 14:59：第三輪重審（Instinct，PR #17 issuecomment-7093861922）：公開隔離與重試已通過，P1 無回歸；整體暫不通過。唯一剩餘項：admin API 雖回 admin_status，admin.js 未使用它——D1 清理失敗後 reload，cleanup_failed 仍顯示一般可編輯列、按鈕仍叫「下架刪除」。建議本輪只補「清理中／清理失敗」標籤及「重試清理」按鈕文案，不加篩選、不重構。通過數：78 項原回歸＋76 項隔離／公開端點／遷移＋14 項瀏覽器／恢復斷言。
 - 15:02：PM 裁示不採「接受 API 可辨識足夠」，依建議小補 admin.js；修正派給完整 GLM 5.3（同一 session、同一分支、同一支 PR #17），冒煙須覆蓋 admin 畫面狀態顯示；新 head 完成後請 Instinct 第四輪重審（只驗本項）。合併、migration 0002＋0003、部署全部先停。
+- 15:04：前端修正完成。新 head `97c35fc`（只改 public/assets/admin.js，+14/−2）：deleting 顯示「清理中」標籤、cleanup_failed 顯示「清理失敗」標籤、cleanup_failed 刪除鈕文案改為「重試清理」（同一個 data-act=del handler，重發 DELETE）。冒煙：前端 DOM 7/7（三種狀態標籤與按鈕文案正確，點「重試清理」確實重發 DELETE），後端 46/46 重跑無回歸。PM 核對 head 與 admin.js 標籤邏輯。
+- 15:09：PM 請 Instinct 第四輪重審（只驗本項）。
 
 ## 模型備註
 
