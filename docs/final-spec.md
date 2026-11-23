@@ -247,11 +247,10 @@ CREATE TABLE jobs (
   3. **跨 Agent 無縫接力**：即使階段一由 `cue`（信箱觸發：Slack @cue → n8n 發信給 Cue）執行，n8n 收到回信後將其 Handoff 摘要貼進 Slack Thread，階段二的 `instinct` / `hark pro` 就能直接讀取前手交接狀態繼續執行。
 
 ### 7.3 Agent 職責分配與穩定性防呆
-* **階段一（深度爬蟲 5+ 篇官方文件 → 寫入 LLM-Wiki）**：優先派發給 **`cue`（信箱觸發：Slack @cue → n8n 發信，最穩定不易漏單；也可直接 mail）**，或於 Slack Thread 內派發給 **`instinct` / `hark pro`**。
-* **階段二（依受眾與風格產出 Obsidian 詳案 ＋ HTML 簡報 JSON）**：於同一 Slack Thread 內 `@instinct` 或 `@hark pro`（完整 Bot 身分與 MCP），n8n 監聽該 Thread 收件。
-* **`muse` 排除於主幹道**：因僅能透過旗標喚醒且漏接率高，不納入面向前端使用者的自動化流程。
-* **簡報母版分離組裝**：Agent 僅產出乾淨的簡報結構 JSON，由 n8n 或 `job-update` API 注入 `templates/slides.html` 母版後存進 R2，徹底根治 HTML 破版問題。
-* **超時自動改派（Timeout Fallback）**：n8n 派單後掛載 12 分鐘 Wait 節點，逾時未回自動重試或改派另一隻封閉式 Agent（必要時可選配 Gemini 4 Hydrogen API 墊檔），並於 Slack Thread 記錄改派事件。
+* **階段一（深度爬蟲 5+ 篇官方文件 → 寫入 LLM-Wiki）**：優先派發給 **`cue`（信箱觸發：Slack @cue → n8n 發信，最穩定不易漏單；也可直接 mail）**，Cue 回在 Slack Thread（固定格式，見 `docs/handoffs/final-project-b-n8n.md` §14）；或於 Slack Thread 內派發給 **`instinct` / `hark pro`**。
+* **階段二（依受眾與風格產出 Obsidian 詳案 ＋ HTML 簡報）**：於同一 Slack Thread 內 `@instinct`（Stage 2 主力）或 `@hark pro`（完整 Bot 身分與 MCP），n8n 監聽該 Thread 收件。Stage 2 直接產出完整簡報 HTML 與詳案 Markdown（`---SLIDES-START---`／`---NOTE-START---` 標記），由 `POST /api/internal/lesson` 寫入 R2＋D1，不經 JSON 母版注入。
+* **`muse` 排除於主幹道**：因僅能透過旗標喚醒且漏接率高，不納入面向前端使用者的自動化流程。Muse 擔任 PM（協調、追蹤、驗收），不進產線。
+* **超時自動改派（Timeout Fallback）**：獨立排程 `lesson-generator-timeout-checker` 每 10 分鐘檢查 35%（Stage 1）／55%（Stage 2）停留逾 12 分鐘的 job；第一次逾時改派另一隻 Agent（Stage 1 改派 Instinct、Stage 2 改派 Cue），第二次逾時標 failed。遲到回覆由寫入端點的進度防護擋下（回 409），不復活已前進的 job。改派事件記錄於 job 的 step_message。
 
 ### 7.4 產出品質規格（Wiki 深度、簡報時間、風格參照）
 
