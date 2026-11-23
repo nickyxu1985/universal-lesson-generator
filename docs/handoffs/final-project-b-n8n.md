@@ -231,3 +231,34 @@ Test D1 row deleted afterwards (Slack test message left as evidence).
 **Still open (A tail):** Workers AI binding not attached → `POST /api/generate`
 returns 503 `ai_not_configured`, so the full generate → webhook path cannot be
 tested end-to-end until the AI binding lands. T1 tested the webhook directly.
+
+## 11. B2-dispatch DONE + verified 2026-11-23 16:36
+
+**Added to `lesson-generator-orchestrator` (now 6 nodes, still active):**
+`Wiki Hit?` (IF, branches on `wiki_hit`) → `Email Cue (Stage 1)` (SMTP) →
+`Job Update (35%)`. The `false` branch (wiki_hit=true, hit path) is unconnected
+for now — B3 attaches Stage 2 there.
+
+**Test (2026-11-23 16:36):** test job `test-b2-20261123-1636` (topic
+`【測試】B2 派發 Cue`, wiki_hit=false) → webhook **HTTP 200**; execution
+`1775` status **success**; all 6 nodes ran; D1 `researching`, progress `35`,
+step_message `已派發給 Cue 製作 Wiki，等待回覆`, `slack_thread_ts`
+`1795422901.280889`. **The IF node imports and executes cleanly via API**
+(unlike Code/Respond). Email Send (SMTP `BIibXLCh0METqrQ0`) works.
+**B2-dispatch: DONE.** (T2 partial — dispatch proven; reply + Wiki write is B2-reply.)
+
+**Note:** this test sent a REAL dispatch email to Cue (`cute276@bot.cue.im`)
+for the test topic. The D1 test job is LEFT in place (35%, waiting) so that
+if/when Cue replies, B2-reply has a real job to work with. Clean it up after
+B2-reply is tested, or on user order. The Slack test thread is `1795422901.280889`.
+
+**B2-reply (still to build):** when Cue replies, catch it, post the Handoff to
+the job thread, write the Wiki to R2 (`wiki/<wiki_id>.md`) + D1 (`wiki_docs` +
+FTS5), update D1 to 55%. **Reply channel (PM ruling):** Cue replies via
+Slack/Manus in the job thread (W10 pattern); B2-reply will be a separate
+workflow with a Slack Trigger filtered to `#universal-lesson-generator` +
+the job's `thread_ts`. This avoids setting up email receiving in n8n
+(no IMAP/Gmail credential exists there). Design doc §4's email-trigger
+wording is superseded by this ruling — update §4 when B2-reply lands.
+**R2/D1 write from n8n** needs a dedicated n8n Cloudflare API token
+(D1 query API + R2 S3 API) — credential to be created before B2-reply build.
