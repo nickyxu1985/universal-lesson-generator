@@ -1,0 +1,183 @@
+# Final Project B — n8n Orchestration (Lesson Generation Pipeline)
+
+**Status:** KICKOFF 2026-11-23 16:12 (user: 「開始B吧」)
+**PM:** Muse | **Builder:** Vibe Work Think (GLM) — main channel per user policy 2026-11-23 13:31
+**Reviewer:** Instinct (same harness as A slices; signed comment = review record)
+**Repo:** nickyxu1985/universal-lesson-generator, branch `develop` (B is n8n-side; repo holds this design doc only)
+
+## 1. What B is (and is NOT)
+
+- **B is a NEW, separate n8n workflow** on the same instance (https://n8n.penghu.cyou).
+  It does NOT modify the Fleet Router (`My workflow`, `zovm2Q5VhIBCAH0L`, active).
+  The Fleet Router is the fleet's live @-routing backbone — do not touch it.
+- **Trigger:** HTTP Webhook POST from Cloudflare `POST /api/generate`
+  (generate.js calls `N8N_WEBHOOK_URL` with `X-Secret-Token`; if unset, job only queues).
+- **Purpose:** turn one queued `jobs` row into a finished lesson:
+  Slack Thread → Stage 1 Wiki (Cue) → Stage 2 lesson + slides (Instinct/Hark)
+  → R2 + D1 writes → job `done` (or `failed` with a reason).
+- **B also owns:** R2 Wiki write + slides/note assembly (per SPEC §6.2 / job-update.js header).
+  `POST /api/internal/job-update` is D1-`jobs`-only; it does NOT write Wiki/slides.
+
+## 2. Contracts B must honour
+
+### 2.1 Inbound webhook (from generate.js)
+- `POST <n8n-webhook-url>` with header `X-Secret-Token: <N8N_SECRET_TOKEN>`
+  and JSON body: `{ job_id, topic, clean_topic, audience, style, duration,
+  wiki_hit, wiki_id, client_ip_hash }`.
+- `audience` ∈ elementary/junior/senior; `style` ∈ story/hands_on/exam/visual.
+- `wiki_hit=true` means D1 FTS5 already has a Wiki for `clean_topic` → skip Stage 1.
+- `wiki_hit=false` means miss → Stage 1 must produce a Wiki first.
+
+### 2.2 Outbound: POST /api/internal/job-update
+- URL: `https://universal-lesson-generator.pages.dev/api/internal/job-update`
+- Header: `X-Secret-Token: <N8N_SECRET_TOKEN>` (Pages env var; same value as inbound).
+  Secret missing on the Pages side → 503 `secret_not_configured` (fail closed).
+- Body: `job_id` (required) + at least one of:
+  `status` ∈ queued/researching/writing/done/failed,
+  `progress` integer 0–100, `step_message` ≤200 chars,
+  `slack_thread_ts`, `lesson_id`, `error_message` ≤500 chars.
+- Only the supplied fields are updated (partial update). Unknown job → 404.
+- B must call this after: thread created (30%), Wiki written (55%),
+  lesson+slides written (80% → 100%), and on failure (failed + error_message).
+
+### 2.3 Slack
+- Channel: `#universal-lesson-generator` (`C0CK6E1NQ0H`).
+- **1 Job = 1 Thread.** First step posts a standard header message
+  (Job ID, topic, clean_topic, audience, style, duration, Wiki hit/miss)
+  and keeps the returned `thread_ts`; write it to D1 via job-update.
+- All stage handoffs and reassignment events are posted into that thread
+  (white-box audit trail, SPEC §7.1–7.2). Formal `@` only for a real handover.
+- B reuses the existing n8n Slack credentials. No new Slack app is created
+  (free-plan 10-app cap is untouched).
+
+### 2.4 R2 + D1 writes (B-owned)
+- **Wiki (Stage 1, miss path only):** write Markdown to R2 bucket
+  `universal-lesson-generator-wiki` key `wiki/<wiki_id>.md`;
+  insert `wiki_docs` row + FTS5 index in D1 `universal-lesson-generator`
+  (`274212d3-edd7-46b1-b8bd-cf8bd95fb3fc`).
+  Wiki must satisfy SPEC §7.4 (≥2,000 chars; 定義/運作方式/例子/適用情境與取捨/常見錯誤）.
+- **Lesson + slides (Stage 2):** assemble slides JSON into
+  `templates/slides.html` → R2 `lessons/<lesson_id>.html`;
+  note Markdown → R2 `notes/<lesson_id>.md`;
+  insert `lessons` row in D1 (id, title, topic, audience, style, category_id,
+  wiki_id, r2_html_key, r2_note_key, tags `[]`, admin_status `active`).
+- **Mechanism (PM ruling):** n8n calls the Cloudflare API directly
+  (D1 query API + R2 S3-compatible API) with a dedicated n8n Cloudflare
+  API token stored as an n8n credential. No new Pages Functions endpoints.
+  Fallback if direct API proves problematic: add internal endpoints
+  (`POST /api/internal/wiki`, `POST /api/internal/lesson`) as an A-extension slice.
+- **D1/R2 are production resources.** Preview and production share the same D1.
+  Test writes land in the real tables — use clearly-marked test topics and
+  clean them up afterwards (admin DELETE via the Access-protected API).
+
+## 3. Workflow stages (node-level)
+
+1. **Webhook** (POST, path `/lesson-generate`, header-auth `X-Secret-Token`).
+   Reject missing/wrong token with 401; reject malformed body with 400.
+2. **Slack: post header** to `#universal-lesson-generator` → capture `thread_ts`.
+3. **HTTP: job-update** `{ job_id, slack_thread_ts, status: researching, progress: 30 }`.
+4. **IF wiki_hit** → skip to step 6 (use existing `wiki_id`).
+   Else **Stage 1**:
+   - **Email Cue** (`cute276@bot.cue.im`): task = research 5 official docs for
+     `<clean_topic>`, produce Wiki per §7.4, reply with a Handoff Block
+     (sources, checkpoints, status). Include Job ID + thread link.
+   - **Wait 12 min** for Cue's reply (email reply trigger; see §4).
+     On timeout → reassign (see §5) and log to thread.
+   - **On reply:** post Handoff summary to the thread; **write Wiki to R2+D1**;
+     **HTTP: job-update** `{ status: researching, progress: 55 }`.
+5. **Stage 2:**
+   - **Slack: @instinct** (or @hark when available) in the thread with Wiki +
+     audience + style + `templates/slides.html` reference.
+     Agent returns slides-structure JSON + note Markdown (Handoff Block).
+   - **Wait 12 min** for the thread reply. On timeout → reassign (see §5).
+   - **On reply:** assemble HTML from `templates/slides.html` + JSON;
+     **write R2** (`lessons/<id>.html`, `notes/<id>.md`) + **D1** `lessons` row;
+     **HTTP: job-update** `{ status: writing, progress: 80 }` then
+     `{ status: done, progress: 100, lesson_id }`.
+6. **Done / Failed:** post the result (slides link + note link, or the failure
+   reason) to the thread. On any failure: **HTTP: job-update**
+   `{ status: failed, error_message }` and post the reason to the thread.
+
+## 4. How B hears back from agents
+
+- **Cue (Stage 1):** by email. Cue replies to the dispatch mail; n8n uses an
+  Email/Gmail trigger on the n8n mailbox to catch the reply, matches it to
+  `job_id` (subject/body must carry it), then continues the workflow.
+  (Cue has no Slack listener; mail is its only inbound route — proven in W10.)
+- **Instinct / Hark (Stage 2):** in the Slack thread. n8n uses a Slack Trigger
+  filtered to `#universal-lesson-generator` + the job's `thread_ts`, matching
+  the reply to `job_id`. (Instinct posts as Nicky via Manus or as himself;
+  accept either identity, match on thread + Job ID in the text.)
+- **Dedup:** the Fleet Router's dedup lesson applies — key on a stable id
+  (`job_id` + source), never on a possibly-missing client id.
+
+## 5. Timeout + reassignment (12 min, SPEC §7.2)
+
+- After each dispatch, a 12-minute Wait node. If no reply: post a timeout note
+  to the thread, then reassign once to the other Stage agent
+  (Stage 1: Cue → Instinct; Stage 2: Instinct → Hark, or vice versa).
+- If the reassigned agent also times out: mark the job `failed`
+  (`error_message` ≤500 chars), post the failure to the thread, stop.
+- A late reply after reassignment must not resurrect the job — match replies
+  to the *current* assignee only.
+
+## 6. Test paths (must pass before B is called done)
+
+- **T1 Webhook → Thread → D1:** POST a test job; thread appears in
+  `#universal-lesson-generator`; `jobs.slack_thread_ts` is set; progress 30.
+- **T2 Wiki miss:** `wiki_hit=false` → Cue dispatched by mail; on mock reply,
+  Wiki lands in R2+D1; progress 55.
+- **T3 Wiki hit:** `wiki_hit=true` → Stage 1 skipped; Stage 2 uses existing Wiki.
+- **T4 Stage 2 → done:** mock agent reply with slides JSON + note → R2
+  `lessons/<id>.html` + `notes/<id>.md` exist; D1 `lessons` row exists;
+  job `done`, progress 100, `lesson_id` set; thread has the links.
+- **T5 Timeout:** no reply in 12 min → reassignment posted; second timeout →
+  job `failed` with a reason.
+- **T6 Auth:** wrong/missing `X-Secret-Token` on the webhook → 401; job-update
+  with a wrong token → 401 (proves the secret is actually enforced).
+
+## 7. Wiring (PM / deployment)
+
+- **Webhook URL + secret:** after the workflow is created, PM copies the
+  production Webhook URL and sets Pages env vars `N8N_WEBHOOK_URL` and
+  `N8N_SECRET_TOKEN` (single name; converge — do NOT also set the legacy
+  `N8N_WEBHOOK_SECRET` with a different value; see job-update.js header
+  rotation warning) on `universal-lesson-generator`, then redeploys.
+- **Secret value:** generate a fresh random token for B (do not reuse the
+  Fleet Router's or any agent's key — one key per consumer, per agent rule).
+  Store it only as the Pages env var + the n8n Webhook credential; never in
+  the repo or in MEMORY.md.
+- **AI binding (A, still open):** `POST /api/generate` returns 503
+  `ai_not_configured` until the Workers AI binding is attached to the Pages
+  project. Without it no job is created and B's webhook never fires, so
+  end-to-end testing of B is blocked until the AI binding lands.
+  (Two API PATCH attempts returned success but left `ai: None` — verify in
+  the dashboard at the next deploy.)
+- **n8n API key rotation:** the `muse-dashboard` replacement key expires
+  2026-12-10 — rotate before then (user's hands-on step).
+
+## 8. Build plan
+
+1. PM (this doc) → dispatch to Vibe Work Think (GLM) with this doc +
+   SPEC §7 + `functions/api/internal/job-update.js` + the Fleet Router
+   workflow JSON as a node/credential reference.
+2. GLM delivers the B workflow JSON (+ a short README: nodes, credentials
+   needed, webhook path) as a file, not a live import.
+3. PM imports the JSON via the n8n API into a NEW workflow
+   (name: `lesson-generator-orchestrator`), wires credentials, activates it.
+4. Instinct reviews (logic + T1–T6 evidence) with the same harness;
+   signed comment = review record. Fix rounds as needed.
+5. PM sets `N8N_WEBHOOK_URL` + `N8N_SECRET_TOKEN`, redeploys Pages,
+   runs T1–T6 against production, records the outcome here.
+
+## 9. Open decisions (PM to rule, user to correct)
+
+- R2/D1 write mechanism: direct Cloudflare API from n8n (ruling above) vs
+  new internal endpoints. Direct API is the default.
+- Stage 2 primary assignee: Instinct (Hark returns 12/5; until then Instinct
+  covers both stages, Cue covers Stage 1 only).
+- Whether Stage 1 also accepts an Instinct fallback when Cue is unreachable
+  (timeout path already covers it — see §5).
+
+---
+*By Muse (PM) — 2026-11-23 16:12. Dual handoff: this doc + Slack thread #universal-lesson-generator.*
