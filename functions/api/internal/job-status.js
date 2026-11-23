@@ -1,6 +1,6 @@
 // GET /api/internal/job-status — 專供 n8n 呼叫（server-to-server，帶 X-Secret-Token）
-// 用途：B2-reply 輪詢時查詢 job 目前進度，避免重複處理已寫入的 Wiki。
-// 範圍：僅讀取 jobs 表（id / status / progress / step_message / lesson_id）。
+// 用途：B2-reply 輪詢去重、B3 Stage 2 派發時取回 job 的 topic/audience/style。
+// 範圍：僅讀取 jobs 表。
 // 環境綁定：env.DB（D1）；env.N8N_SECRET_TOKEN（密鑰，未設定 -> 503 fail closed）
 
 const CORS_HEADERS = {
@@ -40,7 +40,7 @@ export const onRequestGet = async (context) => {
 
   try {
     const job = await env.DB.prepare(
-      'SELECT id, status, progress, step_message, lesson_id FROM jobs WHERE id = ?'
+      'SELECT id, topic, audience, style, status, progress, step_message, lesson_id FROM jobs WHERE id = ?'
     ).bind(jobId).first();
     if (!job) {
       return json({ error: 'job_not_found', job_id: jobId }, 404);
