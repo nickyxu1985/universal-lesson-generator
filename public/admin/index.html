@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理後台 — 萬用教案生成器</title>
+<link rel="stylesheet" href="/assets/style.css">
+<script>
+/* ============================================================
+ * ★ 部署端設定點（選填）：教案生成頻道的 Slack 連結 ★
+ * 格式：https://<workspace>.slack.com/archives/<channel_id>/
+ * 填入後「任務列表」的 slack_thread_ts 會即時組出可點回 Slack 查核的
+ * Thread 連結（…/archives/<channel>/<ts>）；留空則僅顯示 ts 文字。
+ * 鑑權不在本頁範圍：由部署端的零信任機制保護（另見 spec §6.1）。
+ * ============================================================ */
+window.SLACK_CHANNEL_URL = '';
+</script>
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="/">📚 萬用教案生成器</a>
+  <div class="links">
+    <a href="/">首頁</a>
+    <a href="/wiki">LLM-Wiki 知識庫</a>
+    <a href="/admin" class="active">管理後台</a>
+  </div>
+</nav>
+
+<main class="container">
+  <h1>管理後台</h1>
+  <p class="muted">
+    分類管理、教案管理、每日額度與任務稽核。
+    後端 <code>/api/admin/*</code> 屬切片 5，尚未部署前各區塊會顯示「尚未上線」而不報錯。
+  </p>
+
+  <!-- 1. 分類管理 -->
+  <section class="admin-section card">
+    <h2>① 分類管理</h2>
+    <form id="cat-add-form">
+      <label for="cat-name">新增分類</label>
+      <input type="text" id="cat-name" placeholder="分類名稱（如：資訊科技）" maxlength="50" autocomplete="off">
+      <button type="submit">新增</button>
+    </form>
+    <div id="cat-list"></div>
+    <div id="cat-offline" class="admin-offline" hidden>
+      分類管理 API（<code>/api/admin/categories</code>）尚未上線：此為切片 5 後端範圍，待部署後本區塊自動啟用。
+    </div>
+  </section>
+
+  <!-- 2. 教案管理 -->
+  <section class="admin-section card">
+    <h2>② 教案管理</h2>
+    <div id="lesson-admin-list"></div>
+    <div id="lesson-offline" class="admin-offline" hidden>
+      教案管理 API（<code>/api/admin/lessons</code>）尚未上線：此為切片 5 後端範圍，待部署後本區塊自動啟用。
+    </div>
+  </section>
+
+  <!-- 3. 每日額度 -->
+  <section class="admin-section card">
+    <h2>③ 每日額度（daily_quota）</h2>
+    <div id="quota-box" class="muted">載入中…</div>
+    <div id="quota-offline" class="admin-offline" hidden>
+      額度查詢 API（<code>/api/admin/quota</code>）尚未上線：此為切片 5 後端範圍，待部署後本區塊自動啟用。
+    </div>
+  </section>
+
+  <!-- 4. 任務列表與 Slack 稽核 -->
+  <section class="admin-section card">
+    <h2>④ 任務列表（Slack Thread 稽核）</h2>
+    <div id="jobs-table"></div>
+    <div id="jobs-offline" class="admin-offline" hidden>
+      任務查詢 API（<code>/api/admin/jobs</code>）尚未上線：此為切片 5 後端範圍，待部署後本區塊自動啟用。
+    </div>
+  </section>
+</main>
+
+<script src="/assets/admin.js"></script>
+</body>
+</html>

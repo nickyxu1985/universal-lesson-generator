@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>簡報 — 萬用教案生成器</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<!-- 全螢幕簡報：iframe 載入 R2 之獨立 HTML（GET /api/lessons/:id/html） -->
+<div class="slide-frame-holder" id="frame-holder">
+  <div id="slide-loading" style="color:#ced4da; padding:2rem; font-size:1rem;">簡報載入中…</div>
+  <!-- 安全：sandbox="allow-scripts" —— 簡報是 R2 產出、由 LLM 生成的 HTML，
+       隔離其與父頁同源存取（無法讀寫首頁 DOM/cookie/localStorage）。
+       代價（明說，不靜默拔掉）：簡報以不透明來源載入，內部 JS 可以執行，
+       但無法 top 跳轉、開新視窗（需 allow-popups）或提交表單；
+       若日後簡報需這些權限，需在這裡明確加回並說明理由。 -->
+  <iframe id="slide-frame" title="課堂簡報" sandbox="allow-scripts" hidden></iframe>
+</div>
+
+<!-- 右上角懸浮工具列：切換預覽 / 下載詳案 -->
+<div class="slide-toolbar" id="toolbar" hidden>
+  <button type="button" id="btn-note-toggle">📄 詳案</button>
+  <button type="button" id="btn-note-dl">⬇ 下載 .md</button>
+  <a class="btn" href="/" id="btn-home">🏠</a>
+</div>
+
+<!-- 詳案預覽 overlay -->
+<div class="slide-note-overlay" id="note-overlay" hidden>
+  <div class="slide-note-panel">
+    <button class="close" type="button" id="btn-note-close">✕</button>
+    <div id="note-body" class="markdown-body"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" defer></script>
+<script src="/assets/s.js"></script>
+</body>
+</html>

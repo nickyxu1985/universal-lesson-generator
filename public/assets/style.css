@@ -1,0 +1,160 @@
+/* 萬用教案生成器 — 共用樣式（四頁通用） */
+:root {
+  --brand: #3b5bdb;
+  --brand-dark: #2f4bc7;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #212529;
+  --muted: #6c757d;
+  --border: #dee2e6;
+  --ok: #2f9e44;
+  --warn: #e8590c;
+  --err: #c92a2a;
+}
+* { box-sizing: border-box; }
+/* B1 修正：class 的 display 規則（如 .slide-note-overlay/.slide-toolbar/.result-actions
+   的 display:flex）會覆蓋 UA stylesheet 對 [hidden] 的 display:none，
+   導致带 hidden 屬性的元素實際上仍顯示（詳案 overlay 黑罩蓋頁等）。
+   此處以 !important 全域強制 hidden 生效，確保「hidden 必定隱藏」。 */
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+a { color: var(--brand); }
+
+/* 導覽列 */
+.nav {
+  display: flex; align-items: center; gap: 1rem;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1.2rem; position: sticky; top: 0; z-index: 50;
+}
+.nav .logo { font-weight: 700; font-size: 1.1rem; color: var(--brand); text-decoration: none; }
+.nav .links { margin-left: auto; display: flex; gap: 0.9rem; }
+.nav .links a { text-decoration: none; color: var(--text); font-size: 0.95rem; padding: 0.25rem 0.6rem; border-radius: 6px; }
+.nav .links a:hover, .nav .links a.active { background: #eef1ff; color: var(--brand); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 1.2rem; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.15rem; margin-top: 2rem; }
+.muted { color: var(--muted); font-size: 0.88rem; }
+
+/* 卡片與表單 */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(16,24,40,.05);
+}
+label { display: block; font-size: 0.9rem; margin: 0.6rem 0 0.25rem; font-weight: 600; }
+input[type="text"], input[type="number"], select {
+  width: 100%; padding: 0.55rem 0.7rem; font-size: 1rem;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+}
+button, .btn {
+  display: inline-block; padding: 0.55rem 1.1rem; font-size: 0.95rem;
+  border: none; border-radius: 8px; background: var(--brand); color: #fff;
+  cursor: pointer; text-decoration: none;
+}
+button:hover { background: var(--brand-dark); }
+button:disabled { background: #adb5bd; cursor: not-allowed; }
+.btn.secondary { background: #495057; }
+.btn.ok { background: var(--ok); }
+small.hint { color: var(--muted); }
+fieldset { border: none; margin: 0; padding: 0; }
+
+/* 標籤 chips */
+.tag {
+  display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
+  font-size: 0.78rem; background: #eef1ff; color: var(--brand-dark);
+  margin-right: 0.3rem; white-space: nowrap;
+}
+.tag.category { background: #fff4e6; color: #d9480f; cursor: pointer; border: none; }
+.chip-filter { background: none; }
+
+/* 教案卡片 */
+.lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
+.lesson-card { padding: 0.9rem; cursor: default; }
+.lesson-card .title { font-weight: 700; margin-bottom: 0.35rem; }
+.lesson-card .meta { color: var(--muted); font-size: 0.82rem; margin-top: 0.5rem; }
+.lesson-card .links { margin-top: 0.6rem; font-size: 0.85rem; }
+
+/* 進度區 */
+.progress-wrap { margin-top: 1rem; }
+.progress-track {
+  height: 14px; background: #e9ecef; border-radius: 999px; overflow: hidden; margin: 0.5rem 0;
+}
+.progress-bar {
+  height: 100%; width: 0; background: linear-gradient(90deg, var(--brand), #748ffc);
+  transition: width .5s ease; border-radius: 999px;
+}
+.progress-msg { font-size: 0.95rem; }
+.progress-stages { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.4rem 0; }
+.stage {
+  font-size: 0.78rem; padding: 0.15rem 0.6rem; border-radius: 999px;
+  background: #e9ecef; color: var(--muted);
+}
+.stage.done { background: #d3f9d8; color: #2b8a3e; }
+.stage.now { background: #eef1ff; color: var(--brand-dark); font-weight: 700; }
+.result-actions { margin-top: 0.8rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* Wiki */
+.wiki-layout { display: grid; grid-template-columns: 300px 1fr; gap: 1rem; }
+@media (max-width: 720px) { .wiki-layout { grid-template-columns: 1fr; } }
+.wiki-item {
+  padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); margin-bottom: 0.6rem; cursor: pointer;
+}
+.wiki-item:hover { border-color: var(--brand); }
+.wiki-item .t { font-weight: 700; }
+.wiki-item .s { color: var(--muted); font-size: 0.85rem; }
+.sources-list { margin: 0.6rem 0; padding-left: 1.2rem; }
+.sources-list li { margin-bottom: 0.3rem; word-break: break-all; }
+.markdown-body { overflow-wrap: break-word; }
+.markdown-body pre { background: #f1f3f5; padding: 0.8rem; border-radius: 8px; overflow-x: auto; }
+.markdown-body code { background: #f1f3f5; padding: 0.1rem 0.3rem; border-radius: 4px; }
+.markdown-body img { max-width: 100%; }
+
+/* 簡報頁 /s/:id */
+.slide-frame-holder { position: fixed; inset: 0; background: #101113; }
+.slide-frame-holder iframe { width: 100%; height: 100%; border: 0; }
+.slide-toolbar {
+  position: fixed; top: 12px; right: 16px; z-index: 100;
+  display: flex; gap: 0.5rem; align-items: center;
+  background: rgba(20,20,25,.78); padding: 0.45rem 0.7rem; border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4); opacity: .35; transition: opacity .2s;
+}
+.slide-toolbar:hover { opacity: 1; }
+.slide-toolbar button, .slide-toolbar .btn {
+  background: #343a40; color: #e9ecef; border: 1px solid #495057; font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
+}
+.slide-note-overlay {
+  position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 2rem;
+}
+.slide-note-panel {
+  background: #fff; border-radius: 12px; max-width: 820px; width: 100%;
+  max-height: 84vh; overflow-y: auto; padding: 1.4rem; position: relative;
+}
+.slide-note-panel .close { position: absolute; top: 10px; right: 12px; background: #adb5bd; }
+
+/* Admin */
+.admin-section { margin-bottom: 1.4rem; }
+.admin-offline {
+  background: #fff9db; border: 1px solid #ffe066; color: #664d03;
+  padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.9rem; margin-top: 0.5rem;
+}
+table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 0.9rem; }
+th, td { border: 1px solid var(--border); padding: 0.5rem 0.7rem; text-align: left; }
+th { background: #f1f3f5; }
+tr.row-actions form { display: inline; }
+.error-box { background: #fff0f0; border: 1px solid #ffc9c9; color: var(--err); padding: 0.6rem 0.9rem; border-radius: 8px; margin: 0.5rem 0; font-size: 0.9rem; }
+
+/* 通知 */
+.notice { padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem; margin: 0.6rem 0; }
+.notice.info { background: #e7f5ff; color: #1864ab; }
+.notice.err { background: #fff0f0; color: var(--err); }
+.notice.ok { background: #d3f9d8; color: #2b8a3e; }
