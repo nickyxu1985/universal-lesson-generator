@@ -4,7 +4,7 @@
   'use strict';
   var STORE_KEY = 'active_job_id';
   var POLL_INTERVAL = 4000; // 每 4 秒輪詢（spec §6.1）
-  var POLL_TIMEOUT_MS = 10 * 60 * 1000; // L2：輪詢總超時 10 分鐘——逾時未完成即停止追蹤，不無限輪詢
+  var POLL_TIMEOUT_MS = 30 * 60 * 1000; // L2：輪詢總超時 30 分鐘——逾時未完成即停止追蹤，不無限輪詢
   var pollTimer = null;
   var trackStartAt = null;
   var currentLessonId = null;
@@ -145,7 +145,7 @@
   function pollNow(jobId) {
     // L2：總輪詢時限檢查——超過 POLL_TIMEOUT_MS 未完成即停止，避免無限輪詢
     if (trackStartAt !== null && Date.now() - trackStartAt > POLL_TIMEOUT_MS) {
-      $('progress-msg').textContent = '⏱ 已達輪詢總時限（10 分鐘）仍未完成，停止追蹤。請稍後在「最近生成教案」確認結果，或重新生成。';
+      $('progress-msg').textContent = '⏱ 已達輪詢總時限（30 分鐘）仍未完成，停止追蹤。請稍後在「最近生成教案」確認結果，或重新生成。';
       $('progress-msg').className = 'progress-msg';
       stopTracking();
       return;
