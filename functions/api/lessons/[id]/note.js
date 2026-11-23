@@ -29,10 +29,16 @@ export const onRequestGet = async ({ params, env }) => {
   try {
     // 1. 先以 D1 驗證教案存在（冪等防掃 R2）
     const lesson = await env.DB.prepare(
-      'SELECT id, r2_note_key AS r2_key FROM lessons WHERE id = ?'
+      'SELECT id, r2_note_key AS r2_key, admin_status FROM lessons WHERE id = ?'
     ).bind(id).first();
 
     if (!lesson) {
+      return json({ error: 'lesson_not_found', id }, 404);
+    }
+
+    // P2 修正：清理中（deleting）／清理失敗（cleanup_failed）的教案對公開端點視同不存在，
+    // 不讓公開頁出現「D1 列還在、R2 物件已刪」的 404 成品
+    if (lesson.admin_status !== 'active') {
       return json({ error: 'lesson_not_found', id }, 404);
     }
 

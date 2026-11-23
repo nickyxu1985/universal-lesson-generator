@@ -4,6 +4,7 @@
 // 認證由 Cloudflare Access 保護（部署方職責），本程式不自行做認證
 // 環境綁定：env.DB（D1）、env.WIKI_BUCKET（R2；lessons/、notes/、wiki/ 共用前綴區分）
 // lessons.tags 欄位由 migrations/0002_add_lesson_tags.sql 加入（存 JSON 陣列字串）
+// lessons.admin_status 欄位由 migrations/0003_add_lesson_admin_status.sql 加入（'active'/'deleting'/'cleanup_failed'）
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -157,25 +158,50 @@ export const onRequestDelete = async ({ params, env }) => {
     return json({ error: 'lesson_not_found', id }, 404);
   }
 
+  // P2 修正：動手清 R2 之前先把教案改為非公開（admin_status='deleting'），之後無論哪一步失敗
+  // （含第一個 key 成功、第二個 key 失敗），公開 recent／教案頁都不會再露出只剩殘鑰的 404 教案。
+  // 既有列預設 'active'，此欄位由 migrations/0003_add_lesson_admin_status.sql 加入
+  try {
+    await env.DB.prepare(
+      "UPDATE lessons SET admin_status = 'deleting' WHERE id = ?"
+    ).bind(id).run();
+  } catch (e) {
+    console.error('[admin/lessons/:id] mark deleting error:', e?.message || e);
+    return json({ error: 'internal_error' }, 500);
+  }
+
+  const markCleanupFailed = async () => {
+    try {
+      await env.DB.prepare(
+        "UPDATE lessons SET admin_status = 'cleanup_failed' WHERE id = ?"
+      ).bind(id).run();
+    } catch (e) {
+      console.error('[admin/lessons/:id] mark cleanup_failed error:', e?.message || e);
+    }
+  };
+
   // 先清 R2、成功後才刪 D1 列（不做跨 D1/R2 原子交易，但失敗必須可見且可重試）：
-  // 任一 key 刪除拋例外 → 回 502、保留 lessons 列與兩個 r2 keys，管理員可用同一 DELETE 重試
-  // （重試時已刪掉的 key 在 R2 為 no-op，不會誤刪）
+  // 任一 key 刪除拋例外部 → 回 502、標記 cleanup_failed、保留 lessons 列與兩個 r2 keys，
+  // 管理員可用同一 DELETE 重試（重試時已刪掉的 key 在 R2 為 no-op，不會誤刪）
   for (const key of [lesson.r2_html_key, lesson.r2_note_key]) {
     if (!key) continue;
     try {
       await env.WIKI_BUCKET.delete(key);
     } catch (e) {
       console.error('[admin/lessons/:id] r2 delete error:', e?.message || e);
+      await markCleanupFailed();
       return json({ error: 'r2_delete_failed' }, 502);
     }
   }
 
-  // R2 清掉後才刪 lessons 列（wiki_docs 是共享知識庫不刪、jobs 历史保留）；
-  // D1 刪除失敗也回錯（列與 keys 仍在、可重試），不讓「檔案已刪但列殘留」靜默發生
+  // R2 清掉後才刪 lessons 列（wiki_docs 是共享知識庫不刪、jobs 歷史保留）；
+  // D1 刪除失敗也回錯並標記 cleanup_failed（列與 keys 仍在、可重試），
+  // 不讓「檔已刪但列殘留」靜默發生
   try {
     await env.DB.prepare('DELETE FROM lessons WHERE id = ?').bind(id).run();
   } catch (e) {
     console.error('[admin/lessons/:id] d1 delete error:', e?.message || e);
+    await markCleanupFailed();
     return json({ error: 'internal_error' }, 500);
   }
 
