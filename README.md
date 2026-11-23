@@ -2,13 +2,37 @@
 
 > 零月費、系統與資料解耦的自動化教案生成平台。老師輸入主題、選受眾與風格，系統檢索既有知識庫（LLM-Wiki）；沒有資料就由 AI Agent 蒐集 5 篇以上官方／技術文件結構化入庫，最終產出教學 HTML 簡報；期末再加 Obsidian 教師詳案。
 
-## 現在是哪個階段：W10 POC
+## 現在是哪個階段：期末專案基建（W10 已繳交）
 
-- **W10 繳交：2026-11-23 23:59**（遲交到 11/24 16:00），10 分，線上輸入。
-- **W10 只做兩件套**（照老師要求）：LLM-Wiki＋教學 HTML 簡報，外加 loop／graph 說明與一次執行反思。**Obsidian 教師詳案是期末才加，W10 不做；首頁輸入口也是期末才做**，W10 的「輸入口」就是 Slack Thread 手動派單。
-- **主題**：通用教案產生器 — 以自動流程選型為例（固定自動流 → 單一 Agent → Multi-Agent，遇到什麼問題，怎麼選）。
-- **受眾**：國小／國中／高中。**風格（POC）**：story 故事引導（高中一版先跑通）。
-- POC 範圍全文見 `docs/w10-poc-scope.md`；期末完整規格見 `docs/final-spec.md`。
+- **W10 已繳交：2026-11-23 07:05**（10 分），只做兩件套：LLM-Wiki＋教學 HTML 簡報。**Obsidian 教師詳案是期末才加，W10 不做**。
+- **期末專案 due：2026-12-26 23:59**（100 分）。目前階段是**基建（build the base），不是上線營運**。
+- **主題**：通用教案產生器 — 以自動流程選型為例。**受眾**：國小／國中／高中。**風格**：story／hands_on／exam／visual。
+- 期末完整規格見 `docs/final-spec.md`；W10 POC 範圍見 `docs/w10-poc-scope.md`。
+
+## 期末專案 A 進度：CF 前端守門（5 切片全數完成並上線）
+
+上線位址：https://universal-lesson-generator.pages.dev（Cloudflare Pages，production_branch = develop；D1 `universal-lesson-generator`，R2 `universal-lesson-generator-wiki`）。
+
+| 切片 | 內容 | PR | 合併 | 部署 |
+|---|---|---|---|---|
+| 1 | 5 支查詢 API（lessons／recent／html／note／wiki） | #13 | 3c4fda50 | cf28c0f4 |
+| 2 | POST /api/generate（AI 守門＋quota） | #14 | 3a5f2103 | f12d5798 |
+| 3 | POST /api/internal/job-update（n8n 回報） | #15 | 4354ef96 | 3c83da7b |
+| 4 | 四頁（首頁／wiki／s/:id／admin）＋ Turnstile 接線點 | #16 | bd711d8b | 1a572fa0 |
+| 5 | /api/admin/* 後端（分類 CRUD、教案中繼資料、刪除＋R2 清理、quota、jobs）＋ lessons.tags／admin_status | #17 | 7c033154 | ea46d858 |
+
+- 切片 5 經 4 輪重審通過（刪除失敗路徑：R2 刪失敗回 502、列與 keys 保留可重試；公開端點只取 admin_status = active；admin 畫面顯示「清理中／清理失敗」標籤與「重試清理」按鈕）。
+- **管理端點已上 Cloudflare Access**（2026-11-23）：`/api/admin/*` 與 `/admin/*` 只允許 nickyxu@gmail.com 以 Email OTP 登入；公開端點（首頁、recent、lessons、wiki）不受影響。
+- D1 migrations 0001＋0002（tags）＋0003（admin_status）皆已在線上 schema（lessons 表含兩欄；以 wrangler 追蹤表為準，線上無 d1_migrations 紀錄，係直接套用 ALTER TABLE）。
+
+## 尚未做的部分
+
+- **B．n8n 編排**：webhook → #universal-lesson-generator 開 Thread → D1 → 第一階段 Cue 產 Wiki → 交接 → 第二階段產簡報／詳案 → R2＋D1 → done；12 分鐘逾時改派；R2 Wiki 寫入與簡報／詳案組裝。
+- **C．Hark 轉發重建**：見 `specs/handoff.md` §3。
+- **D．內容擴充**：Obsidian notes 層；3 受眾 × 4 風格＝12 組合，POC 只驗了 1 組；Wiki 依 SPEC §7.4 增量（≥2,000 字＋定義／運作方式／例子／適用情境與取捨／常見錯誤）。
+- **E．治理**：main 分支保護未開、期末專案監看排程、SPEC §7.3 muse 排除條款修訂、fleet.md 更新、key_questions 回顧；缺 `specs/AGENTS.md`、`specs/skill.md`、`specs/task.md`、`specs/obsidian-note-spec.md`（SPEC §9 Phase 1 要求）。
+- **尚未接線（上線前須補）**：TURNSTILE_SECRET_KEY、N8N_WEBHOOK_URL、N8N_SECRET_TOKEN（Pages 環境變數皆未設）；AI binding 未設定；完整 happy path（Turnstile＋AI＋n8n）尚未實測；push webhook 不會自動觸發部署（待診斷）；n8n secret 上線前須收斂為單一環境變數名（現雙名 fallback 僅 POC 用）；CF 帳號方案未確認（Free-tier 超量會硬失敗，請上 dashboard 核對）。
+- **已知小問題**：單引號 FTS 查詢 `q="` 回 500（安全、無洩漏，應為 400）；失敗標籤紅底藍字對比可再改善。
 
 ## 成品入口（Job 1 已完成，2026-11-19）
 
