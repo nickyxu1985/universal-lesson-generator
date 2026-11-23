@@ -116,9 +116,14 @@ export const onRequestPost = async (context) => {
 
   try {
     // 5. job 存在檢查
-    const job = await env.DB.prepare('SELECT id FROM jobs WHERE id = ?').bind(jobId).first();
+    const job = await env.DB.prepare('SELECT id, progress FROM jobs WHERE id = ?').bind(jobId).first();
     if (!job) {
       return json({ error: 'job_not_found', job_id: jobId }, 404);
+    }
+    // 遲到防護（T5）：job 須在 Stage 2（55 <= progress < 100）才接受教案；
+    // Stage 1 未完成（<55）或已完成（100）時拒收，避免遲到的簡報復活已結案的 job。
+    if (job.progress < 55 || job.progress >= 100) {
+      return json({ error: 'stage_not_ready', hint: 'job 不在 Stage 2，不接受教案' }, 409);
     }
 
     // 6. wiki_id 若有帶，須存在

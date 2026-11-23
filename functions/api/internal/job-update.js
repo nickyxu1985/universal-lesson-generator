@@ -102,6 +102,14 @@ export const onRequestPost = async (context) => {
     updates.lesson_id = body.lesson_id.trim();
   }
 
+  if (body.reassign_count !== undefined) {
+    const rc = body.reassign_count;
+    if (typeof rc !== 'number' || !Number.isInteger(rc) || rc < 0 || rc > 10) {
+      return json({ error: 'invalid_reassign_count', hint: 'reassign_count 需為 0~10 的整數' }, 400);
+    }
+    updates.reassign_count = rc;
+  }
+
   if (body.error_message !== undefined) {
     if (typeof body.error_message !== 'string' || countChars(body.error_message) > ERROR_MESSAGE_MAX_CHARS) {
       return json({ error: 'invalid_error_message', hint: 'error_message 需為 500 字以內字串' }, 400);
@@ -131,7 +139,7 @@ export const onRequestPost = async (context) => {
 
     // 8. 回傳更新後的 job，公開欄位與 GET /api/jobs/:id 契約一致
     const job = await env.DB.prepare(
-      'SELECT id, status, progress, step_message, lesson_id FROM jobs WHERE id = ?'
+      'SELECT id, status, progress, step_message, lesson_id, reassign_count FROM jobs WHERE id = ?'
     ).bind(jobId).first();
     return json(job, 200);
   } catch (e) {

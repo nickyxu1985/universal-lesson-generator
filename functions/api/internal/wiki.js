@@ -99,9 +99,14 @@ export const onRequestPost = async (context) => {
 
   try {
     // 5. job 存在檢查（寫 Wiki 必須對應一個已建立的 job）
-    const job = await env.DB.prepare('SELECT id FROM jobs WHERE id = ?').bind(jobId).first();
+    const job = await env.DB.prepare('SELECT id, progress FROM jobs WHERE id = ?').bind(jobId).first();
     if (!job) {
       return json({ error: 'job_not_found', job_id: jobId }, 404);
+    }
+    // 遲到防護（T5）：job 已離開 Stage 1（progress >= 55）時，拒收遲到的 Wiki，
+    // 避免被取代的 Stage 1 負責人遲回的 Wiki 復活已前進的 job。
+    if (job.progress >= 55) {
+      return json({ error: 'stage_already_passed', hint: 'job 已離開 Stage 1，不再接受 Wiki' }, 409);
     }
 
     // 6. 寫入 R2（先寫 R2，失敗則不動 D1，避免孤兒列）
