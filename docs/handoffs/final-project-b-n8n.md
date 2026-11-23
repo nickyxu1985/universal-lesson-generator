@@ -411,3 +411,60 @@ Main workflow: 8 nodes. Authoritative exports:
 mechanism + a second dispatch; C (Hark relay rebuild), D (content), E
 (governance) are separate workstreams. AI binding still blocks the end-to-end
 generate → webhook test (user submits on the site).
+
+## 16. T5 timeout reassignment — BUILT + TESTED 2026-11-23 17:35–18:05 (T5 PASSED)
+
+**New workflow `lesson-generator-timeout-checker`** (n8n id `tMvPMCn4MDpXzLzw`,
+ACTIVE, 13 nodes, Schedule Trigger every 10 min). Two parallel branches:
+
+- **Stage 1 stuck at 35% (Cue) >12 min:** `Get Stuck 35` → `Split Out` →
+  `First Timeout?` → first timeout: `Reassign 1: @instinct` (Slack @ in the job
+  thread, as Nicky) + `Reassign 1: Job Update` (reassign_count=1); second
+  timeout: `Fail 1: Job Update` (status failed).
+- **Stage 2 stuck at 55% (Instinct) >12 min:** same shape; first timeout:
+  `Reassign 2: Email Cue` (SMTP to cute276@bot.cue.im — Cue has no Slack
+  listener) + `Reassign 2: Job Update`; second timeout: `Fail 2`.
+
+**Supporting changes (deploy live):**
+- **Migration 0004** (`migrations/0004_reassign_count.sql`, commit `f3a19c3b`,
+  applied to D1): `jobs.reassign_count INTEGER NOT NULL DEFAULT 0`.
+- **GET /api/internal/jobs-stuck** (commit `c0bc9202`, deploy `45be8189`):
+  auth X-Secret-Token; `?progress=35|55&older_than_minutes=12` (default 12);
+  returns stuck jobs (excludes done/failed) with reassign_count.
+- **job-update extended** (same commit): now accepts `reassign_count` (0–10)
+  and returns it in the SELECT.
+- **Late-reply guards** (same commit): Wiki endpoint rejects with **409
+  stage_already_passed** when job progress >= 55 (already past Stage 1);
+  lesson endpoint rejects with **409 stage_not_ready** when job is not in
+  Stage 2 (progress < 55 or >= 100). A replaced assignee's late reply can no
+  longer resurrect a job that moved on.
+
+**Bugs found while testing (both fixed):**
+1. **Email node params:** n8n emailSend requires `fromEmail` + `toEmail`, not
+   `sendTo` — activation failed 400 until fixed (from n8n@penghu.cyou).
+2. **Reassign Job Update $json:** after the Slack/Email node, `$json` is that
+   node's API response (no job id) → `invalid_job_id`. Fixed to
+   `$('Split Out Jobs 35').item.json.id` / `...55...`.
+3. **Schedule Trigger second output never fired:** the trigger has ONE output;
+   putting Get Stuck 55 on a second output array silently never ran it
+   (Stage 2 branch invisible in executions). Fixed by putting BOTH Get Stuck
+   nodes on output 0.
+
+**Tests (all live, 2026-11-23):**
+- Stage 1 reassign: stuck job (35%, >12 min, reassign_count 0) → execution
+  1811 success → reassign_count 1, step_message「Cue 超時，已改派 Instinct 製作 Wiki」.
+- Stage 1 second timeout → fail: same job backdated again → execution 1813
+  success → status **failed**, step_message「Stage 1 超時兩次，任務失敗」.
+- Stage 2 reassign: stuck job (55%, >12 min) → execution 1814 success (both
+  branches ran) → email to Cue sent, reassign_count 1,
+  step_message「Instinct 超時，已改派 Cue 製作簡報」.
+- Guards: Wiki for a job at 55 → **409 stage_already_passed**; lesson for a
+  job at 35 → **409 stage_not_ready**. (One lesson-guard attempt hit a
+  transient Cloudflare edge connection reset; retry returned the 409 cleanly.)
+- Test jobs cleaned from D1. Workflow export:
+  `~/workspace/goals/taica-week-8-ai-agent-assignment-and-final-project-proposal/files/timeout-checker-workflow.json`.
+
+**B workstream status:** B1 + B2-dispatch + B2-reply + B3 + T5 all built and
+tested (T1–T5 passed). B is functionally COMPLETE. Remaining B-adjacent work:
+AI binding (blocks the end-to-end generate → webhook test from the site) and
+the C (Hark relay) / D (content) / E (governance) workstreams.
