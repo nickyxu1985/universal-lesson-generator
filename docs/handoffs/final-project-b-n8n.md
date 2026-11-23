@@ -305,3 +305,56 @@ they are A-extension slices, NOT via GLM — Instinct review available on reques
   (n8n calls it separately). These endpoints are single-purpose (Wiki / lesson
   storage only). R2-before-D1 ordering avoids orphan D1 rows; a D1 failure
   after R2 leaves an orphan R2 file that a retry overwrites (idempotent).
+
+## 14. B2-reply — BUILT + TESTED 2026-11-23 17:02 (T2/T3 PASSED)
+
+**How it works (final design):** Cue replies IN THE SLACK THREAD (via Manus) using
+the strict format the dispatch email specifies (Job ID / Topic / Summary /
+`---WIKI-START---` … `---WIKI-END---` / Sources). The **Fleet Router** (not a
+separate trigger) routes it: Slack Trigger → Filter → Code (dedup) → Switch
+**rule 6 (Wiki reply)** → `B2 Post Wiki` → `B2 Job Update (55%)` → `B2 Post Ack`.
+
+**Why the Fleet Router, not a separate Slack Trigger (hard lesson):**
+- A standalone `lesson-generator-b2-reply` workflow with its own Slack Trigger
+  was built + activated first — **0 executions**. Slack's Events API allows only
+  ONE subscription URL per app, and the Fleet Router already holds it.
+- A polling rebuild (Schedule every 2 min + conversations.history + Split Out)
+  also failed: `conversations.history` does **not** return thread replies, and
+  the Slack user token lacked `channels:history` (`missing_scope`).
+- **Resolution:** add Wiki handling as Switch **rule 6** in the Fleet Router
+  (appended at the end; rules 0–5 untouched). The Events API *does* deliver
+  thread replies, so the existing trigger sees them. The polling workflow
+  (`lesson-generator-b2-reply`, id `yb3nXc3pMvToYUma`) is **deactivated** and kept
+  as a spare; the Fleet Router branch is the live path.
+- **Filter note:** the Fleet Router Filter blocks messages carrying the Muse
+  connector signature unless they contain `Mistral Vibe`. A real Cue reply
+  (via Manus) has no such signature and passes. A simulated reply posted via
+  the Muse connector MUST include `Mistral Vibe` (e.g. after `---WIKI-END---`)
+  to pass the Filter; the Wiki parser only reads between the markers, so the
+  extra line does not pollute the Wiki.
+- **Fleet Router backup** before the change:
+  `~/workspace/goals/instinct-multi-agent-coordination-fleet/hidden_files/n8n-fleet-router-backup-2026-11-23-before-wiki-branch.json`
+  (11 nodes). After: 14 nodes, 7 Switch rules, still active.
+- **New internal endpoint (for the polling attempt, now spare but live):**
+  `GET /api/internal/job-status?job_id=…` (commit `366eade0`, deploy `133bbbc2`).
+  Returns `{id, status, progress, step_message, lesson_id}`; 401/404/503 same as
+  job-update. The polling workflow used it for dedup (skip if progress ≥ 55).
+
+**Test T2/T3 (2026-11-23 17:02):** simulated Cue reply (structured format,
+`Mistral Vibe` after WIKI-END) in the test job thread
+(`test-b2r-20261123-1647`, thread `1795423780.364669`) → Fleet Router execution
+**1785 success**, all 7 nodes ran (Trigger → Filter → Code → Switch → B2 Post
+Wiki → B2 Job Update → B2 Post Ack). D1 job → **researching/55** (`Wiki 已寫入，
+進入階段二`); D1 `wiki_docs` row + R2 `wiki/wiki_test-b2r-20261123-1647.md`
+created; ack posted to the thread. Test data cleaned (D1 + R2). The Slack test
+messages were left as evidence.
+
+**Dispatch email updated** (main workflow `lesson-generator-orchestrator`):
+Cue is now instructed to reply IN THE SLACK THREAD with the strict format
+(Job ID / Topic / Summary / WIKI markers / Sources). The old wording (reply
+with Handoff Block + Wiki by email) is superseded.
+
+**Known issue (main workflow):** a `wiki_hit=true` job 500s on the webhook
+(`Error in workflow`) because the IF false branch is unconnected and
+responseMode is `lastNode` (no output node). B3 attaches Stage 2 there; until
+then, wiki-hit jobs error. Not a B2-reply issue.
