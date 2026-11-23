@@ -63,7 +63,7 @@ export const onRequestGet = async (context) => {
 
     // 4. 關聯教案（以 wiki_id 反查 lessons）
     const { results: relatedLessons } = await env.DB.prepare(
-      'SELECT id, title, audience, style, category_id, created_at FROM lessons WHERE wiki_id = ? ORDER BY created_at DESC'
+      "SELECT id, title, audience, style, category_id, created_at FROM lessons WHERE wiki_id = ? AND admin_status = 'active' ORDER BY created_at DESC"
     ).bind(id).all();
 
     return json({

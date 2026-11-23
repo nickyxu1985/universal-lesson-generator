@@ -36,7 +36,7 @@ export const onRequestGet = async ({ request, env }) => {
                  l.wiki_id, l.created_at
           FROM lessons l
           LEFT JOIN categories c ON c.id = l.category_id
-          WHERE c.slug = ?
+          WHERE l.admin_status = 'active' AND c.slug = ?
           ORDER BY l.created_at DESC
           LIMIT 10`
       ).bind(category).all();
@@ -48,6 +48,7 @@ export const onRequestGet = async ({ request, env }) => {
                  l.wiki_id, l.created_at
           FROM lessons l
           LEFT JOIN categories c ON c.id = l.category_id
+          WHERE l.admin_status = 'active'
           ORDER BY l.created_at DESC
           LIMIT 10`
       ).all();

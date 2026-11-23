@@ -8,6 +8,10 @@
 //   POST   /api/admin/categories  {name}    -> 201 {id,...}
 //   PATCH  /api/admin/categories/:id {name?, sort_order?}
 //   GET    /api/admin/lessons?limit=50      -> { items:[{id,title,audience,style,category_id,category_name,created_at}] }
+//     （切片 5 P2 修正：items 另含 admin_status —— 'active'/'deleting'/'cleanup_failed'；
+
+//       deleting＝清理中、cleanup_failed＝清理失敗，需在教案列顯示狀態標籤，cleanup_failed 的刪除鈕改為「重試清理」）
+
 //   PATCH  /api/admin/lessons/:id {category_id?, tags?: string[]}
 //     （spec §6.1「修改教案所屬分類與標籤」；只送「有變動」的欄位，未變動不送、
 //       完全沒有變動時不發 PATCH；category_id 型別 number|null，null＝清除分類
@@ -125,10 +129,18 @@
           // B3 修正（下半）：把「載入時的原始值」存在 dataset，儲存時據此做變動比對，
           // PATCH 只送有變動的欄位（未動任何欄位 → 不發 PATCH，杜絕靜默覆寫）。
           var origTags = JSON.stringify(Array.isArray(l.tags) ? l.tags.map(String) : []);
+          // P2 修正：清理中／清理失敗的教案顯示狀態標籤；cleanup_failed 的刪除鈕文案改為「重試清理」（行為仍是重發 DELETE，後端已支援重試）
+          var stLabel = '';
+          if (l.admin_status === 'deleting') {
+            stLabel = ' <span class="tag">清理中</span>';
+          } else if (l.admin_status === 'cleanup_failed') {
+            stLabel = ' <span class="tag" style="background:var(--err)">清理失敗</span>';
+          }
+          var delBtnText = l.admin_status === 'cleanup_failed' ? '重試清理' : '下架刪除';
           html += '<tr class="row-actions" data-id="' + esc(l.id) + '"' +
             ' data-cat="' + esc(l.category_id == null ? '' : l.category_id) + '"' +
             ' data-tags="' + esc(origTags) + '">' +
-            '<td>' + esc(l.title) + '</td>' +
+            '<td>' + esc(l.title) + stLabel + '</td>' +
             '<td><span class="tag">' + (AUDIENCE_LABELS[l.audience] || esc(l.audience)) + '</span><span class="tag">' + esc(l.style) + '</span></td>' +
             '<td>' + (cats.length
               ? '<select class="lesson-cat">' + opts
@@ -136,7 +148,7 @@
             '<td><input type="text" class="lesson-tags" value="' + esc(tags) + '" placeholder="標籤1, 標籤2" maxlength="200"></td>' +
             '<td>' + esc(l.created_at || '') + '</td>' +
             '<td><button type="button" class="btn secondary" data-act="setcat">儲存變更</button> ' +
-            '<button type="button" class="btn" style="background:var(--err)" data-act="del">下架刪除</button></td></tr>';
+            '<button type="button" class="btn" style="background:var(--err)" data-act="del">' + delBtnText + '</button></td></tr>';
         });
         html += '</table>';
         $('lesson-admin-list').innerHTML = html;
