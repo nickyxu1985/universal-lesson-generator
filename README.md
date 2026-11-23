@@ -22,16 +22,34 @@
 | 5 | /api/admin/* 後端（分類 CRUD、教案中繼資料、刪除＋R2 清理、quota、jobs）＋ lessons.tags／admin_status | #17 | 7c033154 | ea46d858 |
 
 - 切片 5 經 4 輪重審通過（刪除失敗路徑：R2 刪失敗回 502、列與 keys 保留可重試；公開端點只取 admin_status = active；admin 畫面顯示「清理中／清理失敗」標籤與「重試清理」按鈕）。
-- **管理端點已上 Cloudflare Access**（2026-11-23）：`/api/admin/*` 與 `/admin/*` 只允許 nickyxu@gmail.com 以 Email OTP 登入；公開端點（首頁、recent、lessons、wiki）不受影響。
-- D1 migrations 0001＋0002（tags）＋0003（admin_status）皆已在線上 schema（lessons 表含兩欄；以 wrangler 追蹤表為準，線上無 d1_migrations 紀錄，係直接套用 ALTER TABLE）。
+- **管理端點已上 Cloudflare Access**（2026-11-23）：`/api/admin/*` 與 `/admin/*` 只允許 nickyxu@gmail.com；公開端點（首頁、recent、lessons、wiki）不受影響。登入方式：Email OTP **已確認收不到信**（路徑限定的 app 不觸發 OTP 郵件，使用者 2026-11-23 18:29 確認）；**Cloudflare 帳號登入已試過正常**，是目前可用的登入方式。匿名實測（2026-11-23 17:12）：`/api/admin/*`、`/admin/` 皆 302 到登入頁，公開端點仍 200。注意：preview 與 production 共用同一顆 D1 與同一個 R2 bucket，preview_branch_includes 為 `*`，將來若產生預覽部署，其 hostname 不在現有 Access 保護範圍內，需另外處理。
+- D1 migrations 0001＋0002（lessons.tags）＋0003（lessons.admin_status）＋0004（jobs.reassign_count，T5 用）皆已在線上 schema；線上無 d1_migrations 紀錄，係直接套用 ALTER TABLE，切勿重跑。
+
+## 期末專案 B 進度：n8n 編排（全數完成並通過測試，2026-11-23）
+
+主流程 `lesson-generator-orchestrator`（n8n，webhook `POST https://n8n.penghu.cyou/webhook/lesson-generate`，Header Auth `X-Secret-Token`）；Fleet Router（Slack @mentions）負責接 Thread 回覆；超時檢查 `lesson-generator-timeout-checker`（每 10 分鐘）。
+
+| 測試 | 內容 | 結果 |
+|---|---|---|
+| T1 | webhook → Slack 開 Thread → D1 30%（B1 核心） | ✅ 通過（16:32） |
+| T2/T3 | Cue 在 Thread 回 Wiki → 寫 Wiki → D1 55%（B2 回覆） | ✅ 通過（17:02） |
+| T4 | Wiki 55% → @Instinct 派 Stage 2 → 簡報＋詳案 → D1 done/100（B3） | ✅ 通過（17:12–17:20，簡報頁 HTTP 200） |
+| T5 | 12 分鐘逾時改派一次（Stage 1 改派 Instinct／Stage 2 改派 Cue），第二次逾時標失敗；遲到回覆擋下（Wiki／lesson 皆回 409） | ✅ 通過（17:35–18:05） |
+| T6 | webhook 錯 token → 403；job-update 缺 token → 401 | ✅ 通過（16:41） |
+
+- **B1**：webhook → Post Header（Slack，Nicky 身份）→ Job Update 30% → `Wiki Hit?` 分支。Wiki 已存在（wiki_hit=true）直接進 Stage 2（修正前該分支未接會 500）。
+- **B2**：Stage 1 派 Cue（email，Cue 回在 Slack Thread，固定格式 `Job ID / Topic / Summary / ---WIKI-START--- / ---WIKI-END--- / Sources`）→ Fleet Router 規則 6 接住 → 寫 Wiki（R2＋D1）→ D1 55% → Thread 確認。
+- **B3**：Wiki 完成 → 讀 job（topic／audience／style）→ @Instinct 派 Stage 2（lesson_id = `lsn_<job_id>`）→ Fleet Router 規則 7 接住簡報＋詳案（`---SLIDES-START---`／`---NOTE-START---`）→ 寫教案（R2＋D1）→ D1 done／100＋lesson_id → Thread 完成通知。
+- **T5**：`lesson-generator-timeout-checker` 每 10 分鐘檢查 35%／55% 停留逾 12 分鐘的 job；重派一次（reassign_count 1），第二次逾時標 failed。內部端點 `GET /api/internal/jobs-stuck`；Wiki／lesson 寫入端點有進度防護（遲到回覆回 409，不復活已前進的 job）。
+- 內部端點（供 n8n 用，X-Secret-Token）：`POST /api/internal/wiki`、`POST /api/internal/lesson`、`GET /api/internal/job-status`、`GET /api/internal/jobs-stuck`、`POST /api/internal/job-update`（支援 reassign_count）。
+- 詳細設計與測試紀錄見 `docs/handoffs/final-project-b-n8n.md`。
 
 ## 尚未做的部分
 
-- **B．n8n 編排**：webhook → #universal-lesson-generator 開 Thread → D1 → 第一階段 Cue 產 Wiki → 交接 → 第二階段產簡報／詳案 → R2＋D1 → done；12 分鐘逾時改派；R2 Wiki 寫入與簡報／詳案組裝。
 - **C．Hark 轉發重建**：見 `specs/handoff.md` §3。
 - **D．內容擴充**：Obsidian notes 層；3 受眾 × 4 風格＝12 組合，POC 只驗了 1 組；Wiki 依 SPEC §7.4 增量（≥2,000 字＋定義／運作方式／例子／適用情境與取捨／常見錯誤）。
 - **E．治理**：main 分支保護未開、期末專案監看排程、SPEC §7.3 muse 排除條款修訂、fleet.md 更新、key_questions 回顧；缺 `specs/AGENTS.md`、`specs/skill.md`、`specs/task.md`、`specs/obsidian-note-spec.md`（SPEC §9 Phase 1 要求）。
-- **尚未接線（上線前須補）**：TURNSTILE_SECRET_KEY、N8N_WEBHOOK_URL、N8N_SECRET_TOKEN（Pages 環境變數皆未設）；AI binding 未設定；完整 happy path（Turnstile＋AI＋n8n）尚未實測；push webhook 不會自動觸發部署（待診斷）；n8n secret 上線前須收斂為單一環境變數名（現雙名 fallback 僅 POC 用）；CF 帳號方案未確認（Free-tier 超量會硬失敗，請上 dashboard 核對）。
+- **尚未接線（上線前須補）**：AI binding 未設定（Workers AI 綁定，`/api/generate` 仍回 503）；完整 happy path（Turnstile＋AI＋n8n）尚未實測；push webhook 不會自動觸發部署（待診斷）；CF 帳號方案未確認（Free-tier 超量會硬失敗，請上 dashboard 核對）。已接線：Turnstile（site key＋secret，2026-11-23 16:04，使用者確認可用）、N8N_WEBHOOK_URL＋N8N_SECRET_TOKEN（Pages 環境變數，production＋preview）。
 - **已知小問題**：單引號 FTS 查詢 `q="` 回 500（安全、無洩漏，應為 400）；失敗標籤紅底藍字對比可再改善。
 
 ## 成品入口（Job 1 已完成，2026-11-19）
