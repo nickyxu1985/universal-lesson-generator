@@ -10,7 +10,12 @@
 <!-- 全螢幕簡報：iframe 載入 R2 之獨立 HTML（GET /api/lessons/:id/html） -->
 <div class="slide-frame-holder" id="frame-holder">
   <div id="slide-loading" style="color:#ced4da; padding:2rem; font-size:1rem;">簡報載入中…</div>
-  <iframe id="slide-frame" title="課堂簡報" hidden></iframe>
+  <!-- 安全：sandbox="allow-scripts" —— 簡報是 R2 產出、由 LLM 生成的 HTML，
+       隔離其與父頁同源存取（無法讀寫首頁 DOM/cookie/localStorage）。
+       代價（明說，不靜默拔掉）：簡報以不透明來源載入，內部 JS 可以執行，
+       但無法 top 跳轉、開新視窗（需 allow-popups）或提交表單；
+       若日後簡報需這些權限，需在這裡明確加回並說明理由。 -->
+  <iframe id="slide-frame" title="課堂簡報" sandbox="allow-scripts" hidden></iframe>
 </div>
 
 <!-- 右上角懸浮工具列：切換預覽 / 下載詳案 -->
@@ -29,6 +34,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" defer></script>
 <script src="/assets/s.js"></script>
 </body>
 </html>

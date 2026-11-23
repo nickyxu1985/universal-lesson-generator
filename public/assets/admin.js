@@ -41,6 +41,14 @@
   var AUDIENCE_LABELS = { elementary: '國小', junior: '國中', senior: '高中' };
   var STATUS_LABELS = { queued: '排隊中', researching: '蒐集資料', writing: '撰寫中', done: '完成', failed: '失敗' };
 
+  // L1 修正：Slack 網頁版 thread 連結格式為 /archives/<channel>/p<秒10碼><小數補滿6位>，
+  // 例：ts "1795401325.715629" → p1795401325715629；小數不足 6 位時右補零，不可直接用原 ts。
+  function threadPermalink(base, ts) {
+    var m = String(ts).replace('.', '');
+    while (m.length < 16) m += '0';
+    return base + '/p' + m;
+  }
+
   // ---------- ① 分類管理 ----------
   function loadCategories() {
     apiCall('/api/admin/categories', null, 'cat-offline').then(function (r) {
@@ -104,15 +112,18 @@
         var items = r.body.items || [];
         var html = '<table><tr><th>標題</th><th>受眾/風格</th><th>目前分類</th><th>標籤（逗號分隔）</th><th>建立時間</th><th>操作</th></tr>';
         items.forEach(function (l) {
-          var opts = cats.map(function (c) {
-            return '<option value="' + esc(c.id) + '"' + (c.id === l.category_id ? ' selected' : '') + '>' + esc(c.name) + '</option>';
-          }).join('');
+          // B3 修正：未分類教案（category_id 為 null/undefined）也要有對應的「未分類」選項，
+          // 否則 select 會預設落在第一個分類上，按「儲存變更」就會把未分類教案誤寫入 category_id。
+          var opts = '<option value=""' + (!l.category_id ? ' selected' : '') + '>未分類</option>' +
+            cats.map(function (c) {
+              return '<option value="' + esc(c.id) + '"' + (c.id === l.category_id ? ' selected' : '') + '>' + esc(c.name) + '</option>';
+            }).join('') + '</select>';
           var tags = Array.isArray(l.tags) ? l.tags.join(', ') : '';
           html += '<tr class="row-actions" data-id="' + esc(l.id) + '">' +
             '<td>' + esc(l.title) + '</td>' +
             '<td><span class="tag">' + (AUDIENCE_LABELS[l.audience] || esc(l.audience)) + '</span><span class="tag">' + esc(l.style) + '</span></td>' +
             '<td>' + (cats.length
-              ? '<select class="lesson-cat">' + opts + '</select>'
+              ? '<select class="lesson-cat">' + opts
               : esc(l.category_name || '未分類')) + '</td>' +
             '<td><input type="text" class="lesson-tags" value="' + esc(tags) + '" placeholder="標籤1, 標籤2" maxlength="200"></td>' +
             '<td>' + esc(l.created_at || '') + '</td>' +
@@ -128,7 +139,11 @@
             var sel = tr.querySelector('.lesson-cat');
             var tagsInput = tr.querySelector('.lesson-tags');
             var body = {};
-            if (sel) body.category_id = Number(sel.value);
+            // B3 修正：只有使用者真的選了分類（value 非空）才送 category_id；
+            // 「未分類」(value '') 不送，避免把未分類教案誤寫入分類。
+            // 註：把「已分類教案改回未分類」（即 PATCH category_id: null）的語義
+            // 需切片 5 後端契約定義後再支援，本版不送 null。
+            if (sel && sel.value !== '') body.category_id = Number(sel.value);
             if (tagsInput) {
               body.tags = tagsInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
             }
@@ -180,7 +195,7 @@
         var ts = j.slack_thread_ts;
         var slackCell;
         if (ts && base) {
-          slackCell = '<a href="' + esc(base) + '/' + esc(ts) + '" target="_blank" rel="noopener">' + esc(ts) + ' ↗</a>';
+          slackCell = '<a href="' + esc(threadPermalink(base, ts)) + '" target="_blank" rel="noopener">' + esc(ts) + ' ↗</a>';
         } else if (ts) {
           slackCell = esc(ts) + ' <small class="hint">(於本頁頂部設定點填 SLACK_CHANNEL_URL 即可點回 Slack)</small>';
         } else {

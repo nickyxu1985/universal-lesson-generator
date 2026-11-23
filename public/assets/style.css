@@ -12,6 +12,11 @@
   --err: #c92a2a;
 }
 * { box-sizing: border-box; }
+/* B1 修正：class 的 display 規則（如 .slide-note-overlay/.slide-toolbar/.result-actions
+   的 display:flex）會覆蓋 UA stylesheet 對 [hidden] 的 display:none，
+   導致带 hidden 屬性的元素實際上仍顯示（詳案 overlay 黑罩蓋頁等）。
+   此處以 !important 全域強制 hidden 生效，確保「hidden 必定隱藏」。 */
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;

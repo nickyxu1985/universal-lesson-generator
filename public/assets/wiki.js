@@ -46,13 +46,15 @@
   }
 
   // ---- 單筆條目：GET /api/wiki/:id -> marked.js 渲染 + 來源與關聯教案 ----
+  // 安全：R2 Markdown 內容為 LLM 生成，marked 會直通原生 HTML，
+  // 輸出必經 DOMPurify 消毒後才入 innerHTML；
+  // 任一 CDN（marked/DOMPurify）失效時一律降級為純文字 <pre>，不渲染未消毒 HTML。
   function renderMarkdown(md) {
-    if (window.marked) {
+    if (window.marked && window.DOMPurify) {
       try {
-        return window.marked.parse(md);
+        return window.DOMPurify.sanitize(window.marked.parse(md));
       } catch (e) { /* fall through */ }
     }
-    // CDN失效時降級為純文字，不當機
     return '<pre>' + esc(md) + '</pre>';
   }
 
