@@ -181,3 +181,53 @@
 
 ---
 *By Muse (PM) — 2026-11-23 16:12. Dual handoff: this doc + Slack thread #universal-lesson-generator.*
+
+## 10. B1 build log — T1 PASSED 2026-11-23 16:32
+
+**Workflow:** `lesson-generator-orchestrator` (n8n id `lTPuXuhWhSsRNZAy`), **active**.
+**Webhook:** `POST https://n8n.penghu.cyou/webhook/lesson-generate` (Header Auth `X-Secret-Token`).
+**Pages env vars set** (production + preview, deploy `69445d7f` commit `bb9e7ecc`):
+`N8N_WEBHOOK_URL`, `N8N_SECRET_TOKEN` (fresh random; single name — legacy
+`N8N_WEBHOOK_SECRET` deliberately NOT set). Secret lives only in the n8n
+Header Auth credential `Lesson Generator Webhook Secret` (id `7V8JGV4c59lvfLUp`)
++ the Pages env var. Never in the repo or MEMORY.md.
+**Local authoritative JSON:** `~/workspace/goals/.../files/b-workflow-b1.json`
+(exported from live n8n; 3 nodes; credential IDs only, no secrets).
+
+**Final B1 nodes (3):** Webhook (`lastNode` mode) → Post Header to Slack
+(HTTP `chat.postMessage`) → Job Update (30%) (HTTP `POST /api/internal/job-update`).
+No Code node, no Respond node (see fixes below).
+
+**Fixes made during B1 import (PM, via n8n API):**
+- Native Slack node failed activation (`Missing or invalid required parameters: select`,
+  3 attempts: resource-locator id/list + plain string) → replaced with an
+  HTTP Request node calling Slack `chat.postMessage` with a Slack API credential.
+- Code node (`Validate Body`) failed at runtime (`Could not get parameter "jsCode"`,
+  even with a minimal passthrough and after removing `mode`) → removed entirely.
+  Validation (400) deferred; B1 has no body validation.
+- `jsonBody` / `responseBody` expressions were sent literally (no `=` prefix) →
+  job-update got literal `{{ ... }}` and returned 404 `job_not_found` → rewrote
+  both as `={{ JSON.stringify({...}) }}` expressions.
+- Respond to Webhook node failed (`Could not get parameter "respondWith"`) →
+  removed; Webhook now uses `responseMode: lastNode` (returns the Job Update output).
+- **Slack credential scope:** the `Slack account` credential (`0aKyx9LXuo9rPTZz`)
+  has only `channels:history,channels:read` → `chat.postMessage` returned
+  `missing_scope` (`chat:write:bot` needed) → switched to
+  `Slack user token (Nicky)` (`fuFd6WgdVxF3NPTG`). Header messages now post
+  **as Nicky** (consistent with the fleet's as-Nicky posting).
+- **Lesson (API import):** Code + Respond-to-Webhook nodes do not import cleanly
+  via the n8n Public API (`Could not get parameter ...`); HTTP Request + Webhook
+  nodes do. Prefer HTTP Request nodes for B2/B3; avoid Code/Respond nodes
+  unless built in the n8n UI. Also: `jsonBody` expressions MUST use the `=`
+  prefix or `JSON.stringify`, or `{{ }}` is sent literally.
+
+**T1 test (2026-11-23 16:32):** test job `test-b1-20261123-1626` (topic
+`【測試】B1 webhook 驗證`) → webhook returned **HTTP 200**; Slack header posted
+to #universal-lesson-generator (thread_ts `1795422726.507569`, as Nicky);
+D1 `jobs` updated to `researching`, progress `30`, `slack_thread_ts` set.
+Test D1 row deleted afterwards (Slack test message left as evidence).
+**T1: PASS.**
+
+**Still open (A tail):** Workers AI binding not attached → `POST /api/generate`
+returns 503 `ai_not_configured`, so the full generate → webhook path cannot be
+tested end-to-end until the AI binding lands. T1 tested the webhook directly.
