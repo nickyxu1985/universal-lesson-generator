@@ -53,6 +53,12 @@
 - 15:02：PM 裁示不採「接受 API 可辨識足夠」，依建議小補 admin.js；修正派給完整 GLM 5.3（同一 session、同一分支、同一支 PR #17），冒煙須覆蓋 admin 畫面狀態顯示；新 head 完成後請 Instinct 第四輪重審（只驗本項）。合併、migration 0002＋0003、部署全部先停。
 - 15:04：前端修正完成。新 head `97c35fc`（只改 public/assets/admin.js，+14/−2）：deleting 顯示「清理中」標籤、cleanup_failed 顯示「清理失敗」標籤、cleanup_failed 刪除鈕文案改為「重試清理」（同一個 data-act=del handler，重發 DELETE）。冒煙：前端 DOM 7/7（三種狀態標籤與按鈕文案正確，點「重試清理」確實重發 DELETE），後端 46/46 重跑無回歸。PM 核對 head 與 admin.js 標籤邏輯。
 - 15:09：PM 請 Instinct 第四輪重審（只驗本項）。
+- 15:11：第四輪重審通過（Instinct，PR #17 issuecomment-7093861922→#7094068239）：head 97c35fc，限已測範圍。最後 UI 缺口已補：清理中／清理失敗標籤正確，active 維持原樣；實際故障後 reload 顯示「重試清理」，點擊送同 id DELETE，恢復後 200 並移除資料列。P1、P2 公開隔離與 admin 可辨識／可重試均已落實。本輪 20 項瀏覽器／恢復斷言通過；後端與 schema 未變，沿用第三輪 78 項 API＋76 項隔離／公開端點／migration 證據。非阻擋小項：失敗標籤紅底藍字對比可再改善。證據仍是本地真 SQLite＋D1 adapter／mock R2、真 Chromium 與 Wrangler 路由，非線上驗證；未 merge、部署或執行線上 migration。
+- 15:18：PM 核對線上 D1（PRAGMA table_info）：lessons 表已含 tags（0002）與 admin_status（0003）兩欄，0 筆教案；但無 d1_migrations 追蹤表（係直接套用 ALTER TABLE，非 wrangler migrations apply）。合併前套 migration 步驟已滿足，不重跑 ALTER（重跑會報重複欄位）。
+- 15:19：PR #17 合併至 develop（merge commit 7c033154，使用者核准卡）。
+- 15:20：部署 ea46d858（commit 7c033154，production，stage deploy／success）。上線冒煙：GET /api/admin/categories 回 200 含 4 筆種子分類；GET /api/lessons/recent 回 200（空）。
+- 15:22：Instinct 提醒／api/admin/* 未經 Access 攔截即回 200 與真實資料（PATCH／DELETE 公開可達），Access 是部署方職責。PM 以 Cloudflare API 建兩支 Access 應用（token 已有 Access 權限，沿用調查站格式）：lesson-generator-admin-api（universal-lesson-generator.pages.dev/api/admin，id 7069bb29）與 lesson-generator-admin-page（…/admin，id 3cb31995），皆只允許 nickyxu@gmail.com 以 Email OTP 登入、session 24h。驗證：未登入 GET /api/admin/categories 與 /api/admin/quota 回 302，導向 cloudflareaccess.com 登入頁；首頁與 /api/lessons/recent 仍回 200。
+- 15:25：README.md 已更新（commit cd4e85eb）：W10 標示已繳交，新增「期末專案 A 進度」表（切片 1–5 PR／合併／部署）與「尚未做的部分」（B／C／D／E＋未接線＋已知小問題）。
 
 ## 模型備註
 
