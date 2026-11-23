@@ -10,8 +10,10 @@
 //   GET    /api/admin/lessons?limit=50      -> { items:[{id,title,audience,style,category_id,category_name,created_at}] }
 //   PATCH  /api/admin/lessons/:id {category_id?, tags?: string[]}
 //     （spec §6.1「修改教案所屬分類與標籤」；只送「有變動」的欄位，未變動不送、
-//       完全沒有變動時不發 PATCH；注意 §5 D1 lessons 表目前尚無 tags 欄位，
-//       tags 的儲存 schema 需由切片 5 後端 + D1 遷移定義，本頁先照此契約送出）
+//       完全沒有變動時不發 PATCH；category_id 型別 number|null，null＝清除分類
+//       （設為未分類）——§5 D1 lessons.category_id 本來就允許 null，切片 5 後端請對齊此契約；
+//       注意 §5 D1 lessons 表目前尚無 tags 欄位，tags 的儲存 schema 需由切片 5 後端
+//       + D1 遷移定義，本頁先照此契約送出）
 //   DELETE /api/admin/lessons/:id          （R2 清理由後端負責）
 //   GET    /api/admin/quota                 -> { date, ai_checks, ai_daily_limit, lessons_created, lessons_daily_limit }
 //   GET    /api/admin/jobs?limit=50         -> { items:[{id,topic,audience,style,status,progress,slack_thread_ts,lesson_id,created_at}] }
@@ -147,13 +149,18 @@
             var origCat = tr.getAttribute('data-cat') || '';      // '' = 載入時未分類
             var origTags = JSON.parse(tr.getAttribute('data-tags') || '[]');
             var body = {};
-            // B3 修正（上半）：「未分類」(value '') 不送 category_id，避免把未分類教案誤寫入分類。
-            // B3 修正（下半）：進一步做變動比對——所選分類「非空且與載入時不同」才送；
+            // B3 修正（上半）：分類欄位一律與「載入時原始值」比對，有變動才送：
+            //   - 所選分類非空且不同 → 送該分類 id（Number）
+            //   - 已分類教案改選「未分類」(value '') → 送 PATCH {category_id: null}（清除分類；
+            //     D1 category_id 允許 null，null＝未分類，此為對切片 5 後端的契約定義）
+            //   - 本來就未分類且仍是未分類 → 沒有變動，不送
             // 標籤解析成陣列後與原始值逐項比對，不同才送。完全沒有變動 → 不發 PATCH。
-            // 註：把「已分類教案改回未分類」（即 PATCH category_id: null）的語義
-            // 需切片 5 後端契約定義後再支援，本版不送 null。
-            if (sel && sel.value !== '' && String(sel.value) !== origCat) {
-              body.category_id = Number(sel.value);
+            if (sel) {
+              if (sel.value === '') {
+                if (origCat !== '') body.category_id = null;   // 已分類 → 改回未分類
+              } else if (String(sel.value) !== origCat) {
+                body.category_id = Number(sel.value);
+              }
             }
             if (tagsInput) {
               var newTags = tagsInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
