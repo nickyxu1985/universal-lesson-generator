@@ -11,7 +11,7 @@
 
 ## 期末專案 A 進度：CF 前端守門（5 切片全數完成並上線）
 
-上線位址：https://universal-lesson-generator.pages.dev（Cloudflare Pages，production_branch = develop；D1 `universal-lesson-generator`，R2 `universal-lesson-generator-wiki`）。
+上線位址：[universal-lesson-generator.pages.dev](https://universal-lesson-generator.pages.dev)（Cloudflare Pages，production_branch = develop；D1 `universal-lesson-generator`，R2 `universal-lesson-generator-wiki`）。
 
 | 切片 | 內容 | PR | 合併 | 部署 |
 |---|---|---|---|---|
