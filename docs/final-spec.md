@@ -250,7 +250,7 @@ updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 * **階段一（深度爬蟲 5+ 篇官方文件 → 寫入 LLM-Wiki）**：優先派發給 **`cue`（信箱觸發：Slack @cue → n8n 發信，最穩定不易漏單；也可直接 mail）**，Cue 回在 Slack Thread（固定格式，見 `docs/handoffs/final-project-b-n8n.md` §14）；或於 Slack Thread 內派發給 **`instinct` / `hark pro`**。（2026-11-24 決議：Cue 只負責來源收集，不再製作教案。）
 * **階段二（依受眾與風格產出 Obsidian 詳案 ＋ HTML 簡報）**：由 **`muse` 親自製作**——n8n 於同一 Slack Thread 內以旗標喚醒 Muse（@muse → 旗標檔），Muse 依 R2 Wiki＋受眾＋風格產出完整簡報 HTML 與詳案 Markdown（`---SLIDES-START---`／`---NOTE-START---` 標記），由 `POST /api/internal/lesson` 寫入 R2＋D1，不經 JSON 母版注入。（2026-11-24 決議：Cue 與 Instinct 的試產品質未達標——Cue 三角形被退件、小數點第一階段無回應；教案品質的生產者必須是 Muse。）
 * **`muse` 為階段二生產者（2026-11-24 決議）**：Muse 除擔任 PM（協調、追蹤、驗收）外，親自製作階段二教案。喚醒走旗標；旗標漏接率是已知風險（2026-11-23 曾漏接兩則 @muse），PM 須主動巡查 Thread 與 job 進度，不得只等旗標。Cue 不再製作教案，只負責階段一來源收集。
-* **超時自動改派（Timeout Fallback）**：獨立排程 `lesson-generator-timeout-checker` 每 10 分鐘檢查 35%（Stage 1）／55%（Stage 2）停留逾 12 分鐘的 job；Stage 1 第一次逾時改派 Instinct，第二次逾時標 failed。**Stage 2 逾時不自動改派他人**——原改派 Cue 已不適用（Cue 不再製作教案）；改派對象待使用者定案，期間逾時由 PM（Muse）主動巡查並接手。遲到回覆由寫入端點的進度防護擋下（回 409），不復活已前進的 job。改派事件記錄於 job 的 step_message。
+* **超時自動改派（Timeout Fallback）**：獨立排程 `lesson-generator-timeout-checker` 每 10 分鐘檢查 35%（Stage 1）／55%（Stage 2）停留逾 12 分鐘的 job；Stage 1 第一次逾時改派 Instinct，第二次逾時標 failed。**Stage 2 逾時不改派、不切換 agent，改以 mail 通知使用者**（2026-11-24 使用者決議）——Muse 逾時只代表喚醒或回應慢了，不代表要換人做；mail 通知後由使用者叫醒 Muse 或由 Muse 自行接手。遲到回覆由寫入端點的進度防護擋下（回 409），不復活已前進的 job。改派／通知事件記錄於 job 的 step_message。
 
 ### 7.4 產出品質規格（Wiki 深度、簡報時間、風格參照）
 
